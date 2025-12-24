@@ -102,19 +102,6 @@ class LoginUI(QWidget):
         btn_login.setCursor(Qt.PointingHandCursor)
         btn_login.clicked.connect(self.handle_login)
 
-        forgot = QLabel("<a href='#' style='text-decoration: none;'>Quên mật khẩu?</a>")
-        forgot.setAlignment(Qt.AlignCenter)
-        forgot.setStyleSheet("color: #1f6fa8; font-size: 10px;")
-        forgot.setTextFormat(Qt.RichText)
-        forgot.setTextInteractionFlags(Qt.TextBrowserInteraction)
-
-        # Register label
-        register_label = QLabel("Chưa có tài khoản? <a href='#' style='text-decoration: none; font-weight: bold;'>Đăng ký ngay</a>")
-        register_label.setAlignment(Qt.AlignCenter)
-        register_label.setStyleSheet("color: #7f8c8d; font-size: 11px;")
-        register_label.setTextFormat(Qt.RichText)
-        register_label.setTextInteractionFlags(Qt.TextBrowserInteraction)
-
         # Style
         self.setStyleSheet("""
             QLineEdit {
@@ -159,10 +146,6 @@ class LoginUI(QWidget):
         right_layout.addWidget(self.txt_pass)
         right_layout.addSpacing(20)
         right_layout.addWidget(btn_login)
-        right_layout.addSpacing(10)
-        right_layout.addWidget(forgot)
-        right_layout.addSpacing(15)
-        right_layout.addWidget(register_label)
         right_layout.addStretch()
 
         # ================= MAIN LAYOUT =================
