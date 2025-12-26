@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QTableWidget, QTableWidgetItem,
     QHeaderView, QMessageBox
 )
-from BAL.user_service import get_current_user_info
+from BAL.employee_service import get_current_user_info
 
 class OracleApp(QDialog):
     def __init__(self, parent, conn):
