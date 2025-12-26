@@ -1,4 +1,8 @@
 import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from PySide6.QtWidgets import (
     QApplication, QWidget, QLabel, QLineEdit,
     QPushButton, QHBoxLayout, QVBoxLayout, QFrame,
@@ -6,8 +10,10 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
+from UI.admin_ui import AdminUI
 from UI.form import OracleApp
 from BAL.user_service import login
+
 
 class LoginUI(QWidget):
     def __init__(self):
@@ -102,19 +108,6 @@ class LoginUI(QWidget):
         btn_login.setCursor(Qt.PointingHandCursor)
         btn_login.clicked.connect(self.handle_login)
 
-        forgot = QLabel("<a href='#' style='text-decoration: none;'>Quên mật khẩu?</a>")
-        forgot.setAlignment(Qt.AlignCenter)
-        forgot.setStyleSheet("color: #1f6fa8; font-size: 10px;")
-        forgot.setTextFormat(Qt.RichText)
-        forgot.setTextInteractionFlags(Qt.TextBrowserInteraction)
-
-        # Register label
-        register_label = QLabel("Chưa có tài khoản? <a href='#' style='text-decoration: none; font-weight: bold;'>Đăng ký ngay</a>")
-        register_label.setAlignment(Qt.AlignCenter)
-        register_label.setStyleSheet("color: #7f8c8d; font-size: 11px;")
-        register_label.setTextFormat(Qt.RichText)
-        register_label.setTextInteractionFlags(Qt.TextBrowserInteraction)
-
         # Style
         self.setStyleSheet("""
             QLineEdit {
@@ -159,10 +152,6 @@ class LoginUI(QWidget):
         right_layout.addWidget(self.txt_pass)
         right_layout.addSpacing(20)
         right_layout.addWidget(btn_login)
-        right_layout.addSpacing(10)
-        right_layout.addWidget(forgot)
-        right_layout.addSpacing(15)
-        right_layout.addWidget(register_label)
         right_layout.addStretch()
 
         # ================= MAIN LAYOUT =================
@@ -178,16 +167,23 @@ class LoginUI(QWidget):
             QMessageBox.warning(self, "Lỗi", "Vui lòng nhập username và password")
             return
 
-        try:
-            conn = login(username, password)
-            self.hide() 
-            self.oracle_app = OracleApp(self, conn) 
-            self.oracle_app.show()
-        except Exception as e:
-            QMessageBox.critical(self, "Lỗi đăng nhập", str(e)) 
-            if 'conn' in locals(): 
-                conn.close()
-        print("Login attempt:", username) 
+        # Simplified login - chuyển thẳng đến admin dashboard
+        # TODO: Thay bằng logic đăng nhập thật với database
+        self.hide()
+        self.admin_window = AdminUI(parent=self, username=username)
+        self.admin_window.show()
+        
+        # Code cũ với database connection
+        # try:
+        #     conn = login(username, password)
+        #     self.hide() 
+        #     self.oracle_app = OracleApp(self, conn) 
+        #     self.oracle_app.show()
+        # except Exception as e:
+        #     QMessageBox.critical(self, "Lỗi đăng nhập", str(e)) 
+        #     if 'conn' in locals(): 
+        #         conn.close()
+        print("Login attempt:", username)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
