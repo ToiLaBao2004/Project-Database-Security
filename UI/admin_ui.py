@@ -4,15 +4,16 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
-
+from BAL.employee_service import EmployeeService
 
 class AdminUI(QWidget):
-    def __init__(self, parent=None, username="admin"):
+    def __init__(self,conn, username, parent=None):
         super().__init__()
         self.parent = parent
         self.username = username
         self.setWindowTitle("Admin Dashboard - Quản Lý Hệ Thống")
         self.setMinimumSize(1200, 700)
+        self.employee_service=EmployeeService(conn)
         self.init_ui()
 
     def init_ui(self):
@@ -133,8 +134,10 @@ class AdminUI(QWidget):
 
         # Table
         self.employee_table = QTableWidget()
-        self.employee_table.setColumnCount(5)
-        self.employee_table.setHorizontalHeaderLabels(["ID", "Họ và Tên", "Email", "Số Điện Thoại", "Chức Vụ"])
+        self.employee_table.setColumnCount(9)
+        self.employee_table.setHorizontalHeaderLabels(["id", "name", "dob","gender",
+                                                       "address", "phone_number", "email",
+                                                       "username", "role"])
         self.employee_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.employee_table.setAlternatingRowColors(True)
         self.employee_table.setStyleSheet("""
@@ -249,19 +252,22 @@ class AdminUI(QWidget):
         return page
 
     def load_employee_data(self):
-        # Sample data - sẽ thay bằng dữ liệu từ database
-        employees = [
-            ["1", "Nguyễn Văn A", "nguyenvana@email.com", "0912345678", "Nhân viên"],
-            ["2", "Trần Thị B", "tranthib@email.com", "0923456789", "Quản lý"],
-            ["3", "Lê Văn C", "levanc@email.com", "0934567890", "Nhân viên"],
-            ["4", "Phạm Thị D", "phamthid@email.com", "0945678901", "Trưởng phòng"],
-            ["5", "Hoàng Văn E", "hoangvane@email.com", "0956789012", "Nhân viên"],
-        ]
+        employees=self.employee_service.get_all_employee_info()
+        if not employees:
+            self.employee_table.setRowCount(0)
+            return
+        
+        column_headers = list(employees[0].keys())
+        
+        self.employee_table.setColumnCount(len(column_headers))
+        self.employee_table.setHorizontalHeaderLabels([column_headers])
         
         self.employee_table.setRowCount(len(employees))
-        for row, employee in enumerate(employees):
-            for col, data in enumerate(employee):
-                item = QTableWidgetItem(data)
+    
+        for row, employee_dict in enumerate(employees):
+            for col, key in enumerate(column_headers):
+                data = employee_dict.get(key, "")
+                item = QTableWidgetItem(str(data) if data is not None else "")
                 item.setTextAlignment(Qt.AlignCenter)
                 self.employee_table.setItem(row, col, item)
 

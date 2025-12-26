@@ -11,7 +11,6 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 from UI.admin_ui import AdminUI
-from UI.form import OracleApp
 from BAL.user_service import login
 
 
@@ -164,25 +163,19 @@ class LoginUI(QWidget):
         username = self.txt_user.text().strip()
         password = self.txt_pass.text()
         if not username or not password:
-            QMessageBox.warning(self, "Lỗi", "Vui lòng nhập username và password")
+            QMessageBox.warning(self, "Error", "Please enter username and password")
             return
-
-        # Simplified login - chuyển thẳng đến admin dashboard
-        # TODO: Thay bằng logic đăng nhập thật với database
-        self.hide()
-        self.admin_window = AdminUI(parent=self, username=username)
-        self.admin_window.show()
         
-        # Code cũ với database connection
-        # try:
-        #     conn = login(username, password)
-        #     self.hide() 
-        #     self.oracle_app = OracleApp(self, conn) 
-        #     self.oracle_app.show()
-        # except Exception as e:
-        #     QMessageBox.critical(self, "Lỗi đăng nhập", str(e)) 
-        #     if 'conn' in locals(): 
-        #         conn.close()
+        try:
+            conn = login(username, password)
+            self.hide()
+            self.admin_window = AdminUI(parent=self, username=username, conn=conn)
+            self.admin_window.show()
+        except Exception as e:
+            QMessageBox.critical(self, "Lỗi đăng nhập", str(e)) 
+            if 'conn' in locals(): 
+                conn.close()
+
         print("Login attempt:", username)
 
 if __name__ == "__main__":

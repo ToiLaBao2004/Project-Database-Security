@@ -60,11 +60,15 @@ class EmployeeService:
         except DatabaseError as e:
             raise DatabaseError (f"Error updating employee {employee.username} ",e)
         
-    def get_all_employee_info(self, keyword, type_search):
+    def get_all_employee_info(self, keyword="", type_search=None):
+        
         try:
-            query=f"""SELECT * FROM APP_SERVICE.EMPLOYEES WHERE :keyword= {type_search}"""
-            
-            return self.orcl_exec.fetch_all(query,{"keyword":keyword})
+            if type_search is None:
+                query="""SELECT * FROM APP_SERVICE.EMPLOYEES"""
+                return self.orcl_exec.fetch_all(query)
+            else:
+                query=f"""SELECT * FROM APP_SERVICE.EMPLOYEES WHERE :keyword= {type_search}"""
+                return self.orcl_exec.fetch_all(query,{"keyword":keyword})
         except DatabaseError as e:
             raise ValueError("Cannot get employee info" ,e)
         
