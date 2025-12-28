@@ -1,9 +1,9 @@
 from PySide6.QtWidgets import (
     QWidget, QDialog, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QFrame,
-    QMessageBox, QGridLayout, QScrollArea, QLineEdit
+    QMessageBox, QGridLayout, QScrollArea, QLineEdit, QFileDialog
 )
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QPixmap
 
 class ProductDetailDialog(QDialog):
     def __init__(self, product_data, parent=None):
@@ -11,6 +11,7 @@ class ProductDetailDialog(QDialog):
         self.product_data = product_data
         self.is_editing = False
         self.value_widgets = {}
+        self.image_path = None  # Store selected image path
         self.setWindowTitle(f"Chi Tiết Sản Phẩm - {product_data.get('NAME', 'N/A')}")
         self.setMinimumSize(800, 600)
         self.init_ui()
@@ -157,11 +158,77 @@ class ProductDetailDialog(QDialog):
         grid.setSpacing(15)
         grid.setContentsMargins(0, 0, 0, 0)
 
+        # Add image preview section at the top
+        image_label = QLabel("Hình Ảnh Sản Phẩm:")
+        image_label.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        image_label.setStyleSheet("color: #34495e; border: none;")
+        
+        # Image preview container
+        image_container = QFrame()
+        image_container.setStyleSheet("""
+            QFrame {
+                background-color: #f8f9fa;
+                border: 2px dashed #bdc3c7;
+                border-radius: 8px;
+            }
+        """)
+        image_container.setFixedSize(200, 200)
+        
+        image_layout = QVBoxLayout(image_container)
+        image_layout.setContentsMargins(10, 10, 10, 10)
+        
+        self.image_preview = QLabel("📷\nChưa có hình ảnh")
+        self.image_preview.setAlignment(Qt.AlignCenter)
+        self.image_preview.setFont(QFont("Segoe UI", 10))
+        self.image_preview.setStyleSheet("color: #7f8c8d; border: none; background: transparent;")
+        self.image_preview.setScaledContents(False)
+        
+        image_layout.addWidget(self.image_preview)
+        
+        # Upload button
+        self.btn_upload = QPushButton("📁 Chọn Ảnh")
+        self.btn_upload.setFixedSize(120, 35)
+        self.btn_upload.setFont(QFont("Segoe UI", 9, QFont.Bold))
+        self.btn_upload.setCursor(Qt.PointingHandCursor)
+        self.btn_upload.setStyleSheet("""
+            QPushButton {
+                background-color: #3498db;
+                color: white;
+                border: none;
+                border-radius: 5px;
+            }
+            QPushButton:hover {
+                background-color: #2980b9;
+            }
+            QPushButton:pressed {
+                background-color: #21618c;
+            }
+            QPushButton:disabled {
+                background-color: #bdc3c7;
+            }
+        """)
+        self.btn_upload.clicked.connect(self.select_image)
+        self.btn_upload.setEnabled(False)  # Disabled until edit mode
+        
+        # Image section layout
+        image_section = QHBoxLayout()
+        image_section.addWidget(image_container)
+        image_section.addSpacing(15)
+        
+        upload_layout = QVBoxLayout()
+        upload_layout.addWidget(self.btn_upload)
+        upload_layout.addStretch()
+        image_section.addLayout(upload_layout)
+        image_section.addStretch()
+        
+        grid.addWidget(image_label, 0, 0, Qt.AlignTop)
+        grid.addLayout(image_section, 0, 1)
+
         # Define fields to display - sử dụng đúng key từ product_data
         fields = [
             ("🆔 ID:", "ID"),
             ("📦 Tên Sản Phẩm:", "NAME"),
-            ("🖼️ Hình Ảnh:", "IMAGE"),
+            ("🖼️ Đường Dẫn Ảnh:", "IMAGE"),
             ("💰 Giá:", "UNITPRICE"),
             ("📊 Số Lượng:", "STOCKQUANTITY"),
             ("🏷️ Danh Mục ID:", "CATEGORYID"),
@@ -169,7 +236,7 @@ class ProductDetailDialog(QDialog):
             ("✅ Trạng Thái:", "ACTIVE"),
         ]
 
-        row = 0
+        row = 1  # Start from row 1 since row 0 is for image
         for label_text, key in fields:
             # Label
             label = QLabel(label_text)
@@ -209,6 +276,34 @@ class ProductDetailDialog(QDialog):
         layout.addLayout(grid)
         return section
 
+    def select_image(self):
+        """Open file dialog to select image"""
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Chọn Hình Ảnh Sản Phẩm",
+            "",
+            "Image Files (*.png *.jpg *.jpeg *.bmp *.gif);;All Files (*)"
+        )
+        
+        if file_path:
+            self.image_path = file_path
+            # Update image preview
+            pixmap = QPixmap(file_path)
+            if not pixmap.isNull():
+                scaled_pixmap = pixmap.scaled(
+                    180, 180,
+                    Qt.KeepAspectRatio,
+                    Qt.SmoothTransformation
+                )
+                self.image_preview.setPixmap(scaled_pixmap)
+                self.image_preview.setStyleSheet("border: none; background: transparent;")
+                
+                # Update IMAGE field with file path
+                if 'IMAGE' in self.value_widgets:
+                    self.value_widgets['IMAGE'].setText(file_path)
+            else:
+                QMessageBox.warning(self, "Lỗi", "Không thể tải hình ảnh!")
+
     def toggle_edit_mode(self):
         """Toggle between view and edit mode"""
         self.is_editing = not self.is_editing
@@ -230,6 +325,9 @@ class ProductDetailDialog(QDialog):
                     background-color: #1e8449;
                 }
             """)
+            
+            # Enable upload button
+            self.btn_upload.setEnabled(True)
             
             # Make fields editable (except ID)
             first_field = True
@@ -256,6 +354,9 @@ class ProductDetailDialog(QDialog):
                     background-color: #21618c;
                 }
             """)
+            
+            # Disable upload button
+            self.btn_upload.setEnabled(False)
             
             # Make fields read-only and save data
             for key, widget in self.value_widgets.items():

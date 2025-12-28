@@ -1,17 +1,18 @@
 from PySide6.QtWidgets import (
     QWidget, QDialog, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QFrame,
-    QMessageBox, QGridLayout, QScrollArea, QLineEdit
+    QMessageBox, QGridLayout, QScrollArea, QLineEdit, QFileDialog
 )
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QPixmap
 
 
 class AddProductDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Thêm Sản Phẩm Mới")
-        self.setMinimumSize(700, 500)
+        self.setMinimumSize(700, 600)
         self.input_fields = {}
+        self.image_path = None
         self.init_ui()
 
     def init_ui(self):
@@ -71,6 +72,69 @@ class AddProductDialog(QDialog):
         grid.setSpacing(15)
         grid.setHorizontalSpacing(20)
 
+        # Image upload section
+        image_label = QLabel("🖼️ Hình Ảnh:")
+        image_label.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        image_label.setStyleSheet("color: #34495e;")
+        image_label.setMinimumWidth(150)
+        
+        # Image preview container
+        image_container = QFrame()
+        image_container.setStyleSheet("""
+            QFrame {
+                background-color: #f8f9fa;
+                border: 2px dashed #bdc3c7;
+                border-radius: 8px;
+            }
+        """)
+        image_container.setFixedSize(200, 200)
+        
+        image_layout = QVBoxLayout(image_container)
+        image_layout.setContentsMargins(10, 10, 10, 10)
+        
+        self.image_preview = QLabel("📷\nChưa có hình ảnh")
+        self.image_preview.setAlignment(Qt.AlignCenter)
+        self.image_preview.setFont(QFont("Segoe UI", 10))
+        self.image_preview.setStyleSheet("color: #7f8c8d; border: none; background: transparent;")
+        self.image_preview.setScaledContents(False)
+        
+        image_layout.addWidget(self.image_preview)
+        
+        # Upload button
+        btn_upload = QPushButton("📁 Chọn Ảnh")
+        btn_upload.setFixedSize(120, 35)
+        btn_upload.setFont(QFont("Segoe UI", 9, QFont.Bold))
+        btn_upload.setCursor(Qt.PointingHandCursor)
+        btn_upload.setStyleSheet("""
+            QPushButton {
+                background-color: #3498db;
+                color: white;
+                border: none;
+                border-radius: 5px;
+            }
+            QPushButton:hover {
+                background-color: #2980b9;
+            }
+            QPushButton:pressed {
+                background-color: #21618c;
+            }
+        """)
+        btn_upload.clicked.connect(self.select_image)
+        
+        # Image section layout
+        image_section = QHBoxLayout()
+        image_section.addWidget(image_container)
+        image_section.addSpacing(15)
+        
+        upload_layout = QVBoxLayout()
+        upload_layout.addWidget(btn_upload)
+        upload_layout.addStretch()
+        image_section.addLayout(upload_layout)
+        image_section.addStretch()
+        
+        grid.addWidget(image_label, 0, 0, Qt.AlignTop)
+        grid.addLayout(image_section, 0, 1)
+
         fields = [
             ("📦 Tên Sản Phẩm:", "name", "Nhập tên sản phẩm"),
             ("🏷️ Danh Mục:", "category", "Nhập danh mục"),
@@ -79,7 +143,7 @@ class AddProductDialog(QDialog):
             ("📝 Mô Tả:", "description", "Nhập mô tả sản phẩm (tùy chọn)"),
         ]
 
-        row = 0
+        row = 1
         for label_text, key, placeholder in fields:
             # Label
             label = QLabel(label_text)
@@ -169,6 +233,30 @@ class AddProductDialog(QDialog):
         main_layout.addWidget(scroll_area)
         main_layout.addLayout(btn_layout)
 
+    def select_image(self):
+        """Open file dialog to select image"""
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Chọn Hình Ảnh Sản Phẩm",
+            "",
+            "Image Files (*.png *.jpg *.jpeg *.bmp *.gif);;All Files (*)"
+        )
+        
+        if file_path:
+            self.image_path = file_path
+            # Update image preview
+            pixmap = QPixmap(file_path)
+            if not pixmap.isNull():
+                scaled_pixmap = pixmap.scaled(
+                    180, 180,
+                    Qt.KeepAspectRatio,
+                    Qt.SmoothTransformation
+                )
+                self.image_preview.setPixmap(scaled_pixmap)
+                self.image_preview.setStyleSheet("border: none; background: transparent;")
+            else:
+                QMessageBox.warning(self, "Lỗi", "Không thể tải hình ảnh!")
+
     def validate_and_accept(self):
         """Validate form and accept if valid"""
         # Check if required fields are filled
@@ -206,4 +294,6 @@ class AddProductDialog(QDialog):
 
     def get_product_data(self):
         """Get product data from form"""
-        return {key: field.text().strip() for key, field in self.input_fields.items()}
+        data = {key: field.text().strip() for key, field in self.input_fields.items()}
+        data['image'] = self.image_path if self.image_path else ""
+        return data
