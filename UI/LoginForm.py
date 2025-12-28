@@ -10,12 +10,10 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
-from UI.admin_ui import AdminUI
-from UI.employee_ui import EmployeeUI
-from BAL.user_service import login
+from BAL.LoginService import login
+from UI.MainForm import MainForm
 
-
-class LoginUI(QWidget):
+class LoginForm(QWidget):
     def __init__(self):
         super().__init__()
         self.oracle_app = None
@@ -168,26 +166,19 @@ class LoginUI(QWidget):
             return
         
         try:
-            conn = login(username, password)
+            oracleExec = login(username, password)
             self.hide()
-            
-            # Phân biệt: nếu username là "SYS" thì vào Admin, còn lại vào Employee
-            if username.upper() == "SYS":
-                self.admin_window = AdminUI(parent=self, username=username, conn=conn)
-                self.admin_window.show()
-            else:
-                self.employee_window = EmployeeUI(parent=self, username=username, conn=conn)
-                self.employee_window.show()
+            mainForm = MainForm(oracleExec, username)
+            mainForm.show()
                 
         except Exception as e:
             QMessageBox.critical(self, "Lỗi đăng nhập", str(e)) 
-            if 'conn' in locals(): 
-                conn.close()
 
         print("Login attempt:", username)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = LoginUI()
+    window = LoginForm()
     window.show()
     sys.exit(app.exec())
+    
