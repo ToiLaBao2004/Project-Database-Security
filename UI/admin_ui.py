@@ -5,15 +5,18 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 from BAL.employee_service import EmployeeService
+from UI.employee_management_ui import AddEmployeeDialog, EmployeeDetailDialog
+from UI.product_management_ui import AddProductDialog, ProductDetailDialog
+
 
 class AdminUI(QWidget):
-    def __init__(self,conn, username, parent=None):
+    def __init__(self, conn, username, parent=None):
         super().__init__()
         self.parent = parent
         self.username = username
         self.setWindowTitle("Admin Dashboard - Quản Lý Hệ Thống")
         self.setMinimumSize(1200, 700)
-        self.employee_service=EmployeeService(conn)
+        self.employee_service = EmployeeService(conn)
         self.init_ui()
 
     def init_ui(self):
@@ -49,7 +52,7 @@ class AdminUI(QWidget):
         header_layout.addWidget(admin_name)
 
         # Menu buttons
-        self.btn_employees = QPushButton("� Quản Lý Nhân Viên")
+        self.btn_employees = QPushButton("👥 Quản Lý Nhân Viên")
         self.btn_products = QPushButton("📋 Quản Lý Sản Phẩm")
         self.btn_logout = QPushButton("🚪 Đăng Xuất")
 
@@ -120,11 +123,10 @@ class AdminUI(QWidget):
         btn_layout = QHBoxLayout()
         
         btn_add = QPushButton("➕ Thêm Nhân Viên")
-        btn_edit = QPushButton("✏️ Sửa Nhân Viên")
         btn_delete = QPushButton("🗑️ Xóa Nhân Viên")
         btn_refresh = QPushButton("🔄 Làm Mới")
         
-        for btn in [btn_add, btn_edit, btn_delete, btn_refresh]:
+        for btn in [btn_add, btn_delete, btn_refresh]:
             btn.setFixedHeight(40)
             btn.setFont(QFont("Segoe UI", 10, QFont.Bold))
             btn.setCursor(Qt.PointingHandCursor)
@@ -135,7 +137,7 @@ class AdminUI(QWidget):
         # Table
         self.employee_table = QTableWidget()
         self.employee_table.setColumnCount(9)
-        self.employee_table.setHorizontalHeaderLabels(["id", "name", "dob","gender",
+        self.employee_table.setHorizontalHeaderLabels(["id", "name", "dob", "gender",
                                                        "address", "phone_number", "email",
                                                        "username", "role"])
         self.employee_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
@@ -167,10 +169,12 @@ class AdminUI(QWidget):
         self.load_employee_data()
 
         # Connect buttons
-        btn_add.clicked.connect(lambda: QMessageBox.information(self, "Thêm", "Chức năng thêm nhân viên (TODO)"))
-        btn_edit.clicked.connect(lambda: QMessageBox.information(self, "Sửa", "Chức năng sửa nhân viên (TODO)"))
+        btn_add.clicked.connect(self.show_add_employee_form)
         btn_delete.clicked.connect(lambda: QMessageBox.information(self, "Xóa", "Chức năng xóa nhân viên (TODO)"))
         btn_refresh.clicked.connect(self.load_employee_data)
+        
+        # Connect cell click to show employee details
+        self.employee_table.cellClicked.connect(self.show_employee_detail)
 
         layout.addWidget(header)
         layout.addLayout(btn_layout)
@@ -194,11 +198,10 @@ class AdminUI(QWidget):
         btn_layout = QHBoxLayout()
         
         btn_add = QPushButton("➕ Thêm Sản Phẩm")
-        btn_edit = QPushButton("✏️ Sửa Sản Phẩm")
         btn_delete = QPushButton("🗑️ Xóa Sản Phẩm")
         btn_refresh = QPushButton("🔄 Làm Mới")
         
-        for btn in [btn_add, btn_edit, btn_delete, btn_refresh]:
+        for btn in [btn_add, btn_delete, btn_refresh]:
             btn.setFixedHeight(40)
             btn.setFont(QFont("Segoe UI", 10, QFont.Bold))
             btn.setCursor(Qt.PointingHandCursor)
@@ -239,10 +242,12 @@ class AdminUI(QWidget):
         self.load_product_data()
 
         # Connect buttons
-        btn_add.clicked.connect(lambda: QMessageBox.information(self, "Thêm", "Chức năng thêm sản phẩm (TODO)"))
-        btn_edit.clicked.connect(lambda: QMessageBox.information(self, "Sửa", "Chức năng sửa sản phẩm (TODO)"))
+        btn_add.clicked.connect(self.show_add_product_form)
         btn_delete.clicked.connect(lambda: QMessageBox.information(self, "Xóa", "Chức năng xóa sản phẩm (TODO)"))
         btn_refresh.clicked.connect(self.load_product_data)
+        
+        # Connect cell click to show product details
+        self.product_table.cellClicked.connect(self.show_product_detail)
 
         layout.addWidget(header)
         layout.addLayout(btn_layout)
@@ -252,7 +257,7 @@ class AdminUI(QWidget):
         return page
 
     def load_employee_data(self):
-        employees=self.employee_service.get_all_employee_info()
+        employees = self.employee_service.get_all_employee_info()
         if not employees:
             self.employee_table.setRowCount(0)
             return
@@ -300,3 +305,59 @@ class AdminUI(QWidget):
             if self.parent:
                 self.parent.show()
             self.close()
+
+    def show_employee_detail(self, row, col):
+        """Show detailed employee information when clicking on a cell"""
+        # Get employee data from the clicked row
+        employee_data = {}
+        for col_idx in range(self.employee_table.columnCount()):
+            header = self.employee_table.horizontalHeaderItem(col_idx).text()
+            item = self.employee_table.item(row, col_idx)
+            employee_data[header] = item.text() if item else ""
+        
+        # Open detail dialog
+        dialog = EmployeeDetailDialog(employee_data, self)
+        dialog.exec()
+
+    def show_add_employee_form(self):
+        """Show form to add new employee"""
+        dialog = AddEmployeeDialog(self)
+        if dialog.exec():
+            # Get the new employee data
+            new_employee = dialog.get_employee_data()
+            if new_employee:
+                QMessageBox.information(
+                    self,
+                    "Thành Công",
+                    f"Đã thêm nhân viên: {new_employee.get('name', 'N/A')}\n(Chức năng lưu vào database sẽ được thêm sau)"
+                )
+                # Reload table
+                self.load_employee_data()
+
+    def show_add_product_form(self):
+        """Show form to add new product"""
+        dialog = AddProductDialog(self)
+        if dialog.exec():
+            # Get the new product data
+            new_product = dialog.get_product_data()
+            if new_product:
+                QMessageBox.information(
+                    self,
+                    "Thành Công",
+                    f"Đã thêm sản phẩm: {new_product.get('name', 'N/A')}\n(Chức năng lưu vào database sẽ được thêm sau)"
+                )
+                # Reload table
+                self.load_product_data()
+
+    def show_product_detail(self, row, col):
+        """Show detailed product information when clicking on a cell"""
+        # Get product data from the clicked row
+        product_data = {}
+        headers = ["ID", "Tên Sản Phẩm", "Danh Mục", "Giá", "Số Lượng"]
+        for col_idx in range(self.product_table.columnCount()):
+            item = self.product_table.item(row, col_idx)
+            product_data[headers[col_idx]] = item.text() if item else ""
+        
+        # Open detail dialog
+        dialog = ProductDetailDialog(product_data, self)
+        dialog.exec()

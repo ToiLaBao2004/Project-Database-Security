@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 from UI.admin_ui import AdminUI
+from UI.employee_ui import EmployeeUI
 from BAL.user_service import login
 
 
@@ -169,8 +170,15 @@ class LoginUI(QWidget):
         try:
             conn = login(username, password)
             self.hide()
-            self.admin_window = AdminUI(parent=self, username=username, conn=conn)
-            self.admin_window.show()
+            
+            # Phân biệt: nếu username là "SYS" thì vào Admin, còn lại vào Employee
+            if username.upper() == "SYS":
+                self.admin_window = AdminUI(parent=self, username=username, conn=conn)
+                self.admin_window.show()
+            else:
+                self.employee_window = EmployeeUI(parent=self, username=username, conn=conn)
+                self.employee_window.show()
+                
         except Exception as e:
             QMessageBox.critical(self, "Lỗi đăng nhập", str(e)) 
             if 'conn' in locals(): 
