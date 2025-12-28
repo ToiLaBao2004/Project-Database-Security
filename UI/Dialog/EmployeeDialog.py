@@ -249,7 +249,7 @@ class EmployeeDetailDialog(QDialog):
         audit_table.setStyleSheet("""
             QTableWidget {
                 background-color: white;
-                border: 1px solid #e0e6ed;
+                border: 1px solid #bdc3c7;
                 border-radius: 5px;
                 gridline-color: #ecf0f1;
             }
@@ -259,10 +259,10 @@ class EmployeeDetailDialog(QDialog):
                 padding: 10px;
                 border: none;
                 font-weight: bold;
-                font-size: 10px;
             }
             QTableWidget::item {
                 padding: 8px;
+                color: #2c3e50;
                 border: none;
             }
             QTableWidget::item:selected {

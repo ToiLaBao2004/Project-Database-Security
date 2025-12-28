@@ -60,11 +60,14 @@ class MainForm(QWidget):
         # Menu buttons based on role
         self.btn_employees = QPushButton("👥 Quản Lý Nhân Viên")
         self.btn_products = QPushButton("📋 Quản Lý Sản Phẩm")
-        self.btn_logout = QPushButton("🚪 Đăng Xuất")
+        
+        
         self.btn_profile = QPushButton("👤 Thông Tin Cá Nhân")
         self.btn_activity = QPushButton("📊 Hoạt Động Của Tôi")
         self.btn_orders = QPushButton("📦 Đơn Hàng")
-        menu_buttons = [self.btn_profile, self.btn_activity, self.btn_orders, self.btn_employees, self.btn_products, self.btn_logout]
+        
+        self.btn_logout = QPushButton("🚪 Đăng Xuất")
+        menu_buttons = [self.btn_employees, self.btn_products, self.btn_profile, self.btn_activity, self.btn_orders, self.btn_logout]
 
         # Style menu buttons
         menu_style = """
@@ -219,10 +222,32 @@ class MainForm(QWidget):
         activity_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         activity_table.setAlternatingRowColors(True)
         activity_table.setStyleSheet("""
-            QTableWidget { background-color: white; border: 1px solid #bdc3c7; border-radius: 5px; gridline-color: #ecf0f1; }
-            QHeaderView::section { background-color: #34495e; color: white; padding: 10px; border: none; font-weight: bold; }
-            QTableWidget::item { padding: 8px; }
-            QTableCornerButton::section { background-color: #34495e; border: none; }
+            QTableWidget {
+                background-color: white;
+                border: 1px solid #bdc3c7;
+                border-radius: 5px;
+                gridline-color: #ecf0f1;
+            }
+            QHeaderView::section {
+                background-color: #34495e;
+                color: white;
+                padding: 10px;
+                border: none;
+                font-weight: bold;
+            }
+            QTableWidget::item {
+                padding: 8px;
+                color: #2c3e50;
+                border: none;
+            }
+            QTableWidget::item:selected {
+                background-color: #3498db;
+                color: white;
+            }
+            QTableCornerButton::section {
+                background-color: #34495e;
+                border: none;
+            }
         """)
 
         activities = [
@@ -277,10 +302,32 @@ class MainForm(QWidget):
         orders_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         orders_table.setAlternatingRowColors(True)
         orders_table.setStyleSheet("""
-            QTableWidget { background-color: white; border: 1px solid #bdc3c7; border-radius: 5px; gridline-color: #ecf0f1; }
-            QHeaderView::section { background-color: #34495e; color: white; padding: 10px; border: none; font-weight: bold; }
-            QTableWidget::item { padding: 8px; }
-            QTableCornerButton::section { background-color: #34495e; border: none; }
+            QTableWidget {
+                background-color: white;
+                border: 1px solid #bdc3c7;
+                border-radius: 5px;
+                gridline-color: #ecf0f1;
+            }
+            QHeaderView::section {
+                background-color: #34495e;
+                color: white;
+                padding: 10px;
+                border: none;
+                font-weight: bold;
+            }
+            QTableWidget::item {
+                padding: 8px;
+                color: #2c3e50;
+                border: none;
+            }
+            QTableWidget::item:selected {
+                background-color: #3498db;
+                color: white;
+            }
+            QTableCornerButton::section {
+                background-color: #34495e;
+                border: none;
+            }
         """)
         orders_table.setRowCount(0)
 
@@ -328,10 +375,32 @@ class MainForm(QWidget):
         self.employee_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.employee_table.setAlternatingRowColors(True)
         self.employee_table.setStyleSheet("""
-            QTableWidget { background-color: white; border: 1px solid #bdc3c7; border-radius: 5px; gridline-color: #ecf0f1; }
-            QHeaderView::section { background-color: #34495e; color: white; padding: 10px; border: none; font-weight: bold; }
-            QTableWidget::item { padding: 8px; }
-            QTableCornerButton::section { background-color: #34495e; border: none; }
+            QTableWidget {
+                background-color: white;
+                border: 1px solid #bdc3c7;
+                border-radius: 5px;
+                gridline-color: #ecf0f1;
+            }
+            QHeaderView::section {
+                background-color: #34495e;
+                color: white;
+                padding: 10px;
+                border: none;
+                font-weight: bold;
+            }
+            QTableWidget::item {
+                padding: 8px;
+                color: #2c3e50;
+                border: none;
+            }
+            QTableWidget::item:selected {
+                background-color: #3498db;
+                color: white;
+            }
+            QTableCornerButton::section {
+                background-color: #34495e;
+                border: none;
+            }
         """)
 
         self.load_employee_data()
@@ -377,10 +446,32 @@ class MainForm(QWidget):
         self.product_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.product_table.setAlternatingRowColors(True)
         self.product_table.setStyleSheet("""
-            QTableWidget { background-color: white; border: 1px solid #bdc3c7; border-radius: 5px; gridline-color: #ecf0f1; }
-            QHeaderView::section { background-color: #34495e; color: white; padding: 10px; border: none; font-weight: bold; }
-            QTableWidget::item { padding: 8px; }
-            QTableCornerButton::section { background-color: #34495e; border: none; }
+            QTableWidget {
+                background-color: white;
+                border: 1px solid #bdc3c7;
+                border-radius: 5px;
+                gridline-color: #ecf0f1;
+            }
+            QHeaderView::section {
+                background-color: #34495e;
+                color: white;
+                padding: 10px;
+                border: none;
+                font-weight: bold;
+            }
+            QTableWidget::item {
+                padding: 8px;
+                color: #2c3e50;
+                border: none;
+            }
+            QTableWidget::item:selected {
+                background-color: #3498db;
+                color: white;
+            }
+            QTableCornerButton::section {
+                background-color: #34495e;
+                border: none;
+            }
         """)
 
         self.load_product_data()
