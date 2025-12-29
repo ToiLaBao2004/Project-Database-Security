@@ -1,14 +1,18 @@
 from PySide6.QtWidgets import (
     QWidget, QDialog, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QFrame,
-    QMessageBox, QGridLayout, QScrollArea, QLineEdit, QFileDialog
+    QMessageBox, QGridLayout, QScrollArea, QLineEdit, QFileDialog, QComboBox
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QPixmap
-
+import os
+import shutil
+from BAL.ProductService import ProductService
+from models.ProductModel import ProductModel
 
 class AddProductDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, oracleExec, parent=None):
         super().__init__(parent)
+        self.oracleExec = oracleExec
         self.setWindowTitle("Thêm Sản Phẩm Mới")
         self.setMinimumSize(700, 600)
         self.input_fields = {}
@@ -136,15 +140,16 @@ class AddProductDialog(QDialog):
         grid.addLayout(image_section, 0, 1)
 
         fields = [
-            ("📦 Tên Sản Phẩm:", "name", "Nhập tên sản phẩm"),
-            ("🏷️ Danh Mục:", "category", "Nhập danh mục"),
-            ("💰 Giá:", "price", "Nhập giá (VND)"),
-            ("📊 Số Lượng:", "quantity", "Nhập số lượng"),
-            ("📝 Mô Tả:", "description", "Nhập mô tả sản phẩm (tùy chọn)"),
+            ("📦 Tên Sản Phẩm:", "name", "Nhập tên sản phẩm", "text"),
+            ("🏷️ Danh Mục ID:", "categoryId", "Nhập ID danh mục", "text"),
+            ("💰 Giá:", "unitPrice", "Nhập giá (VND)", "text"),
+            ("📊 Số Lượng:", "stockQuantity", "Nhập số lượng", "text"),
+            ("🏢 Thương Hiệu ID:", "brandId", "Nhập ID thương hiệu", "text"),
+            ("✅ Trạng Thái:", "active", "", "combo"),
         ]
 
         row = 1
-        for label_text, key, placeholder in fields:
+        for label_text, key, placeholder, field_type in fields:
             # Label
             label = QLabel(label_text)
             label.setFont(QFont("Segoe UI", 10, QFont.Bold))
@@ -152,22 +157,49 @@ class AddProductDialog(QDialog):
             label.setMinimumWidth(150)
 
             # Input field
-            input_field = QLineEdit()
-            input_field.setPlaceholderText(placeholder)
-            input_field.setFont(QFont("Segoe UI", 10))
-            input_field.setFixedHeight(40)
-            input_field.setStyleSheet("""
-                QLineEdit {
-                    color: #2c3e50;
-                    background-color: white;
-                    padding: 8px 12px;
-                    border-radius: 5px;
-                    border: 2px solid #e0e6ed;
-                }
-                QLineEdit:focus {
-                    border: 2px solid #e67e22;
-                }
-            """)
+            if field_type == "combo":
+                input_field = QComboBox()
+                input_field.addItems(["True", "False"])
+                input_field.setCurrentText("True")  # Default active
+                input_field.setFont(QFont("Segoe UI", 10))
+                input_field.setFixedHeight(40)
+                input_field.setStyleSheet("""
+                    QComboBox {
+                        color: #2c3e50;
+                        background-color: white;
+                        padding: 8px 12px;
+                        border-radius: 5px;
+                        border: 2px solid #e0e6ed;
+                    }
+                    QComboBox:focus {
+                        border: 2px solid #e67e22;
+                    }
+                    QComboBox::drop-down {
+                        border: none;
+                    }
+                    QComboBox::down-arrow {
+                        image: url(down_arrow.png);
+                        width: 12px;
+                        height: 12px;
+                    }
+                """)
+            else:
+                input_field = QLineEdit()
+                input_field.setPlaceholderText(placeholder)
+                input_field.setFont(QFont("Segoe UI", 10))
+                input_field.setFixedHeight(40)
+                input_field.setStyleSheet("""
+                    QLineEdit {
+                        color: #2c3e50;
+                        background-color: white;
+                        padding: 8px 12px;
+                        border-radius: 5px;
+                        border: 2px solid #e0e6ed;
+                    }
+                    QLineEdit:focus {
+                        border: 2px solid #e67e22;
+                    }
+                """)
 
             self.input_fields[key] = input_field
 
@@ -221,7 +253,7 @@ class AddProductDialog(QDialog):
                 background-color: #1e8449;
             }
         """)
-        btn_save.clicked.connect(self.validate_and_accept)
+        btn_save.clicked.connect(self.validate_and_create)
 
         btn_layout.addStretch()
         btn_layout.addWidget(btn_cancel)
@@ -257,13 +289,46 @@ class AddProductDialog(QDialog):
             else:
                 QMessageBox.warning(self, "Lỗi", "Không thể tải hình ảnh!")
 
-    def validate_and_accept(self):
+    def save_selected_image(self):
+        """Save the selected image to the images folder"""
+        if not self.image_path:
+            return
+        
+        # Create images folder if it doesn't exist
+        images_dir = os.path.join(os.path.dirname(__file__), '..', 'images')
+        os.makedirs(images_dir, exist_ok=True)
+        
+        # Get product name for filename
+        product_name = self.input_fields["name"].text().strip()
+        if not product_name:
+            return
+        
+        # Get file extension
+        _, ext = os.path.splitext(self.image_path)
+        
+        # Create filename: product_name + ext
+        filename = f"{product_name}{ext}"
+        dest_path = os.path.join(images_dir, filename)
+        
+        try:
+            shutil.copy2(self.image_path, dest_path)
+            # Update image_path to the new filename (relative)
+            self.image_path = filename
+        except Exception as e:
+            QMessageBox.warning(self, "Lỗi Lưu Ảnh", f"Không thể lưu hình ảnh: {str(e)}")
+
+    def validate_and_create(self):
         """Validate form and accept if valid"""
         # Check if required fields are filled
-        required_fields = ["name", "category", "price", "quantity"]
+        required_fields = ["name", "categoryId", "unitPrice", "stockQuantity", "brandId", "active"]
         
         for field in required_fields:
-            if not self.input_fields[field].text().strip():
+            if field == "active":
+                value = self.input_fields[field].currentText()
+            else:
+                value = self.input_fields[field].text().strip()
+            
+            if not value:
                 QMessageBox.warning(
                     self,
                     "Thiếu Thông Tin",
@@ -272,28 +337,59 @@ class AddProductDialog(QDialog):
                 self.input_fields[field].setFocus()
                 return
         
-        # Validate price and quantity are numbers
+        # Validate numeric fields
         try:
-            price = self.input_fields["price"].text().strip()
-            quantity = self.input_fields["quantity"].text().strip()
+            unitPrice = self.input_fields["unitPrice"].text().strip().replace(",", "")
+            stockQuantity = self.input_fields["stockQuantity"].text().strip()
+            categoryId = self.input_fields["categoryId"].text().strip()
+            brandId = self.input_fields["brandId"].text().strip()
             
-            # Remove commas if present
-            price = price.replace(",", "")
-            float(price)
-            int(quantity)
+            float(unitPrice)
+            int(stockQuantity)
+            int(categoryId)
+            int(brandId)
         except ValueError:
             QMessageBox.warning(
                 self,
                 "Lỗi Định Dạng",
-                "Giá phải là số và Số lượng phải là số nguyên!"
+                "Giá, Số lượng, Danh mục ID và Thương hiệu ID phải là số!"
             )
             return
         
-        # If all valid, accept
+        # If all valid, save image if selected and accept
+        if self.image_path:
+            self.save_selected_image()
+        
         self.accept()
-
+        
+        product_data = self.get_product_data()
+        try:
+            product = ProductModel(
+                id=0,  # Will be set by sequence
+                name=product_data["name"],
+                image=product_data["image"],
+                unit_price=int(float(product_data["unitPrice"].replace(",", ""))),
+                stock_quantity=int(product_data["stockQuantity"]),
+                category_id=int(product_data["categoryId"]),
+                brand_id=int(product_data["brandId"]),
+                active=product_data["active"].lower() == "true"
+            )
+            
+            service = ProductService(self.oracleExec)
+            service.create_product(product)
+            
+            QMessageBox.information(self, "Thành Công", f"Đã thêm sản phẩm '{product_data['name']}' thành công!")
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Lỗi", f"Lỗi khi thêm sản phẩm: {str(e)}")
+        
     def get_product_data(self):
         """Get product data from form"""
-        data = {key: field.text().strip() for key, field in self.input_fields.items()}
+        data = {}
+        for key, field in self.input_fields.items():
+            if isinstance(field, QComboBox):
+                data[key] = field.currentText()
+            else:
+                data[key] = field.text().strip()
         data['image'] = self.image_path if self.image_path else ""
         return data
