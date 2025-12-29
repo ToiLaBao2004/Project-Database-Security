@@ -4,15 +4,19 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QPixmap
+from BAL.ProductService import ProductService
+from models.ProductModel import ProductModel
+import shutil
 import os  # Added for path handling
 
 class ProductDetailDialog(QDialog):
-    def __init__(self, product_data, parent=None):
+    def __init__(self, product_data, oracle_exec, parent=None):
         super().__init__(parent)
         self.product_data = product_data
         self.is_editing = False
         self.value_widgets = {}
         self.image_path = None  # Store selected image path
+        self.oracle_exec = oracle_exec
         self.setWindowTitle(f"Chi Tiết Sản Phẩm - {product_data.get('NAME', 'N/A')}")
         self.setMinimumSize(800, 600)
         self.init_ui()
@@ -282,12 +286,11 @@ class ProductDetailDialog(QDialog):
         """Load initial image from product_data['IMAGE'] if available"""
         image_key = self.product_data.get('IMAGE', None)
         if image_key and image_key != 'N/A':
-            # Compute absolute path to images folder relative to script location
-            # Assuming script is in UI/Dialog/, images is in UI/images/
             script_dir = os.path.dirname(os.path.abspath(__file__))
-            images_dir = os.path.join(script_dir, '..', 'images')
+            #lùi về 1 thư mục để đến thư mục gốc
+            script_dir = os.path.dirname(script_dir)
+            images_dir = os.path.join(script_dir, 'images')
             image_path = os.path.join(images_dir, image_key)
-            
             # Check if file exists
             if os.path.exists(image_path):
                 pixmap = QPixmap(image_path)
@@ -395,9 +398,68 @@ class ProductDetailDialog(QDialog):
                 widget.setReadOnly(True)
                 self.product_data[key] = widget.text()
             
-            # Show save confirmation
-            QMessageBox.information(
-                self,
-                "Thành Công",
-                "Thông tin sản phẩm đã được cập nhật!\n(Chức năng lưu vào database sẽ được thêm sau)"
-            )
+            # Call ProductService to update product
+            try:
+                productService = ProductService(self.oracle_exec)
+                
+                # Save new image to images folder if selected
+                if self.image_path:
+                    script_dir = os.path.dirname(os.path.abspath(__file__))
+                    script_dir = os.path.dirname(script_dir)
+                    images_dir = os.path.join(script_dir, 'images')
+                    os.makedirs(images_dir, exist_ok=True)
+                    
+                    filename = os.path.basename(self.image_path)
+                    base, ext = os.path.splitext(filename)
+                    counter = 1
+                    dest_path = os.path.join(images_dir, filename)
+                    
+                    # Avoid overwriting existing files
+                    while os.path.exists(dest_path):
+                        new_filename = f"{base}_{counter}{ext}"
+                        dest_path = os.path.join(images_dir, new_filename)
+                        filename = new_filename
+                        counter += 1
+                    
+                    try:
+                        shutil.copy2(self.image_path, dest_path)
+                        self.product_data['IMAGE'] = filename
+                    except Exception as e:
+                        QMessageBox.warning(self, "Lỗi Lưu Ảnh", f"Không thể lưu hình ảnh: {str(e)}")
+                
+                # Parse ACTIVE field (handle boolean/int values)
+                active_value = self.product_data['ACTIVE'].strip().lower()
+                active = 1 if active_value in ('1', 'true', 'yes') else 0
+                
+                product = ProductModel(id=int(self.product_data['ID']),
+                                       name=self.product_data['NAME'],
+                                       image=self.product_data['IMAGE'],
+                                       unit_price=float(self.product_data['UNITPRICE']),
+                                       stock_quantity=int(self.product_data['STOCKQUANTITY']),
+                                       category_id=int(self.product_data['CATEGORYID']),
+                                       brand_id=int(self.product_data['BRANDID']),
+                                       active=active)
+                productService.update_product(product)
+                
+                QMessageBox.information(
+                    self,
+                    "Thành Công",
+                    "Thông tin sản phẩm đã được cập nhật!"
+                )
+            except ValueError as e:
+                QMessageBox.critical(
+                    self,
+                    "Lỗi Dữ Liệu",
+                    f"Vui lòng kiểm tra dữ liệu:\n- Giá phải là số\n- Số lượng phải là số nguyên\n- ID danh mục/thương hiệu phải là số nguyên\n\nLỗi: {str(e)}"
+                )
+                self.is_editing = True
+                self.toggle_edit_mode()
+            except Exception as e:
+                QMessageBox.critical(
+                    self,
+                    "Lỗi",
+                    f"Không thể cập nhật sản phẩm: {str(e)}"
+                )
+                # Restore editing mode if save fails
+                self.is_editing = True
+                self.toggle_edit_mode()
