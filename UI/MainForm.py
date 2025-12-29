@@ -591,8 +591,8 @@ class MainForm(QWidget):
         if AddEmployeeDialog is None:
             QMessageBox.warning(self, "Lỗi", "Chưa import được form thêm nhân viên")
             return
-            
-        dialog = AddEmployeeDialog(self)
+
+        dialog = AddEmployeeDialog(self.oracleExec, self)
         if dialog.exec():
             new_employee = dialog.get_employee_data()
             if new_employee:
