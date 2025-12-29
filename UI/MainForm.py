@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
+from datetime import date, datetime
 
 # Giả định các file import này vẫn giữ nguyên như code cũ của bạn
 # Nếu chạy test độc lập mà thiếu file thì bạn comment tạm các dòng import BAL/UI này lại
@@ -436,7 +437,7 @@ class MainForm(QWidget):
         self.load_employee_data()
 
         btn_add.clicked.connect(self.show_add_employee_form)
-        btn_delete.clicked.connect(lambda: QMessageBox.information(self, "Xóa", "Chức năng xóa nhân viên (TODO)"))
+        btn_delete.clicked.connect(self.delete_employee)
         btn_refresh.clicked.connect(self.load_employee_data)
         self.employee_table.cellClicked.connect(self.show_employee_detail)
 
@@ -613,7 +614,15 @@ class MainForm(QWidget):
         for row, employee_dict in enumerate(employees):
             for col, key in enumerate(column_headers):
                 data = employee_dict.get(key, "")
-                item = QTableWidgetItem(str(data) if data is not None else "")
+                
+                if isinstance(data, (date, datetime)):
+                    display_text = data.strftime('%Y-%m-%d')
+                elif data is None:
+                    display_text = ""
+                else:
+                    display_text = str(data)
+                
+                item = QTableWidgetItem(display_text)
                 item.setTextAlignment(Qt.AlignCenter)
                 self.employee_table.setItem(row, col, item)
 
@@ -660,7 +669,7 @@ class MainForm(QWidget):
             item = self.employee_table.item(row, col_idx)
             employee_data[header] = item.text() if item else ""
         
-        dialog = EmployeeDetailDialog(employee_data, self)
+        dialog = EmployeeDetailDialog(employee_data, self.oracleExec, self)
         dialog.exec()
 
     def show_add_employee_form(self):
@@ -673,9 +682,28 @@ class MainForm(QWidget):
             new_employee = dialog.get_employee_data()
             if new_employee:
                 QMessageBox.information(self, "Thành Công",
-                    f"Đã thêm nhân viên: {new_employee.get('name', 'N/A')}\n(Chức năng lưu vào database sẽ được thêm sau)")
+                    f"Đã thêm nhân viên: {new_employee.get('name', 'N/A')}\n")
                 self.load_employee_data()
-
+                
+    def delete_employee(self):
+        selected_row=self.employee_table.currentRow()
+        if selected_row < 0:
+            QMessageBox.warning(self,"Cảnh báo", "Vui lòng chọn một nhân viên để xóa")
+            return
+        
+        username=self.employee_table.item(selected_row,7).text()
+        reply = QMessageBox.question(self, "Xác Nhận",
+                                     f"Bạn có chắc chắn muốn xóa nhân viên {username}?",
+                                     QMessageBox.Yes | QMessageBox.No)
+        
+        if reply == QMessageBox.Yes:
+            try:
+                self.userService.deactive_employee(username)
+                QMessageBox.information(self, "Thành Công", f"Đã xóa nhân viên {username}")
+                self.load_employee_data()
+            except Exception as e:
+                QMessageBox.critical(self, "Lỗi", f"Lỗi khi xóa: {str(e)}")
+        
     def show_add_product_form(self):
         if AddProductDialog is None:
             QMessageBox.warning(self, "Lỗi", "Chưa import được form thêm sản phẩm")

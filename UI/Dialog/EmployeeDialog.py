@@ -5,13 +5,19 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
+from BAL.UserService import UserService
+from models.EmployeeModel import EmployeeModel
+from BAL.AuditSerice import AuditService
 
 class EmployeeDetailDialog(QDialog):
-    def __init__(self, employee_data, parent=None):
+    def __init__(self, employee_data, oracleExec,parent=None):
         super().__init__(parent)
         self.employee_data = employee_data
         self.is_editing = False
-        self.value_widgets = {}  # Store references to value widgets
+        self.value_widgets = {}
+        self.auditService=AuditService(oracleExec)
+        self.userService=UserService(oracleExec)
+        
         self.setWindowTitle(f"Chi Tiết Nhân Viên - {employee_data.get('name', 'N/A')}")
         self.setMinimumSize(900, 700)
         self.init_ui()
@@ -46,7 +52,7 @@ class EmployeeDetailDialog(QDialog):
         name_label.setFont(QFont("Segoe UI", 18, QFont.Bold))
         name_label.setStyleSheet("color: white; background: transparent;")
         
-        role_label = QLabel(f"🏷️ {self.employee_data.get('role', 'N/A')}")
+        role_label = QLabel(f"🏷️ {self.employee_data.get('emp_role', 'N/A')}")
         role_label.setFont(QFont("Segoe UI", 12))
         role_label.setStyleSheet("color: #ecf0f1; background: transparent;")
         
@@ -167,10 +173,10 @@ class EmployeeDetailDialog(QDialog):
         fields = [
             ("👤 ID:", "id"),
             ("👤 Họ và Tên:", "name"),
-            ("🎂 Ngày Sinh:", "dob"),
+            ("🎂 Ngày Sinh:", "dateofbirth"),
             ("⚧️ Giới Tính:", "gender"),
             ("🏠 Địa Chỉ:", "address"),
-            ("📞 Số Điện Thoại:", "phone_number"),
+            ("📞 Số Điện Thoại:", "phonenumber"),
             ("📧 Email:", "email"),
             ("🔑 Username:", "username"),
         ]
@@ -238,9 +244,7 @@ class EmployeeDetailDialog(QDialog):
         # Audit table
         audit_table = QTableWidget()
         audit_table.setColumnCount(5)
-        audit_table.setHorizontalHeaderLabels([
-            "Thời Gian", "Hành Động", "Bảng", "Chi Tiết", "IP Address"
-        ])
+        audit_table.setHorizontalHeaderLabels(["Tài Khoản", "Thời gian", "Hành động", "Bảng", "Hoàn thành"])
         audit_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         audit_table.setAlternatingRowColors(True)
         audit_table.setEditTriggers(QTableWidget.NoEditTriggers)
@@ -274,37 +278,43 @@ class EmployeeDetailDialog(QDialog):
                 border: none;
             }
         """)
-
-        # Sample audit log data - filtered by employee
-        employee_id = self.employee_data.get('id', 'N/A')
-        employee_name = self.employee_data.get('name', 'N/A')
-        username = self.employee_data.get('username', 'N/A')
-        
-        audit_logs = [
-            ["2024-12-28 10:30:45", "INSERT", "EMPLOYEES", f"Tạo tài khoản nhân viên ID: {employee_id}", "192.168.1.100"],
-            ["2024-12-27 14:20:15", "UPDATE", "EMPLOYEES", f"Cập nhật thông tin nhân viên: {employee_name}", "192.168.1.100"],
-            ["2024-12-27 09:15:30", "SELECT", "EMPLOYEES", f"Xem thông tin cá nhân", "192.168.1.105"],
-            ["2024-12-26 16:45:00", "UPDATE", "EMPLOYEES", f"Thay đổi số điện thoại", "192.168.1.100"],
-            ["2024-12-25 11:30:22", "SELECT", "ORDERS", f"Truy vấn đơn hàng phụ trách", "192.168.1.110"],
-            ["2024-12-24 08:20:10", "INSERT", "ORDERS", f"Tạo đơn hàng mới", "192.168.1.110"],
-            ["2024-12-23 15:10:05", "UPDATE", "ORDERS", f"Cập nhật trạng thái đơn hàng", "192.168.1.110"],
-        ]
+        audit_logs = []
+        try:
+            audit_logs = self.auditService.get_user_audit(self.employee_data["username"])
+        except Exception as e:
+            QMessageBox.critical(self, "Lỗi audit", f"{str(e)}")
 
         audit_table.setRowCount(len(audit_logs))
+        
+        keys = ['username', 'event_timestamp', 'action_name', 'object_name', 'return_code']
+
         for row, log in enumerate(audit_logs):
-            for col, data in enumerate(log):
-                item = QTableWidgetItem(data)
+            for col, key in enumerate(keys):
+                val = log.get(key, "")
+                
+                if key == 'event_timestamp' and val:
+                    display_text = val.strftime("%d/%m/%Y %H:%M:%S")
+                else:
+                    display_text = str(val)
+
+                item = QTableWidgetItem(display_text)
                 item.setTextAlignment(Qt.AlignCenter)
                 
-                # Color code actions
-                if col == 1:  # Action column
-                    if data == "INSERT":
+                if key == 'action_name':
+                    if val == "INSERT":
                         item.setForeground(Qt.green)
-                    elif data == "UPDATE":
+                        item.setFont(QFont("Segoe UI", weight=QFont.Bold))
+                    elif val == "UPDATE":
                         item.setForeground(Qt.blue)
-                    elif data == "DELETE":
+                    elif val == "DELETE":
                         item.setForeground(Qt.red)
-                    
+                    elif val == "SELECT":
+                        item.setForeground(Qt.darkGray)
+                
+                if key == 'return_code':
+                    if val != 0:
+                        item.setForeground(Qt.red)
+
                 audit_table.setItem(row, col, item)
 
         layout.addWidget(audit_table)
@@ -363,9 +373,24 @@ class EmployeeDetailDialog(QDialog):
                 widget.setReadOnly(True)
                 self.employee_data[key] = widget.text()
             
-            # Show save confirmation
-            QMessageBox.information(
-                self,
-                "Thành Công",
-                "Thông tin nhân viên đã được cập nhật!\n(Chức năng lưu vào database sẽ được thêm sau)"
-            )
+            try:
+                employee=EmployeeModel(id=self.employee_data["id"],
+                                       address=self.employee_data["address"],
+                                       phonenumber=self.employee_data["phonenumber"],
+                                       email=self.employee_data["email"])
+                
+                self.userService.update_employee(employee)
+                QMessageBox.information(
+                    self,
+                    "Thành Công",
+                    "Thông tin nhân viên đã được cập nhật!"
+                )
+                
+            except Exception as e:
+                self.is_editing = True
+                for key, widget in self.value_widgets.items():
+                    if key != 'id':
+                        widget.setReadOnly(False)
+                
+                QMessageBox.critical(self,"Lỗi Cập Nhật",f"{str(e)}"
+                )
