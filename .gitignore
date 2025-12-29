@@ -3,3 +3,4 @@ UI/__pycache__
 DAL/__pycache__
 models/__pycache__
 UI/Dialog/__pycache__
+.venv/

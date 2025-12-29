@@ -5,13 +5,24 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
-from BAL.UserService import UserService
-from BAL.ProductService import ProductService
 
-from UI.Dialog.EmployeeDialog import EmployeeDetailDialog
-from UI.Dialog.AddEmployeeDialog import AddEmployeeDialog
-from UI.Dialog.AddProductDialog import AddProductDialog
-from UI.Dialog.ProductDetailDialog import ProductDetailDialog
+# Giả định các file import này vẫn giữ nguyên như code cũ của bạn
+# Nếu chạy test độc lập mà thiếu file thì bạn comment tạm các dòng import BAL/UI này lại
+try:
+    from BAL.UserService import UserService
+    from BAL.ProductService import ProductService
+    from UI.Dialog.EmployeeDialog import EmployeeDetailDialog
+    from UI.Dialog.AddEmployeeDialog import AddEmployeeDialog
+    from UI.Dialog.AddProductDialog import AddProductDialog
+    from UI.Dialog.ProductDetailDialog import ProductDetailDialog
+except ImportError:
+    # Dummy classes để code không crash nếu thiếu file
+    UserService = None
+    ProductService = None
+    EmployeeDetailDialog = None
+    AddEmployeeDialog = None
+    AddProductDialog = None
+    ProductDetailDialog = None
 
 class MainForm(QWidget):
     def __init__(self, oracleExec, username=None, parent=None):
@@ -19,8 +30,11 @@ class MainForm(QWidget):
         self.parent = parent
         self.oracleExec = oracleExec
         self.username = username
-        self.userService = UserService(self.oracleExec)
-        self.productService = ProductService(self.oracleExec)
+        
+        # Khởi tạo service nếu import thành công
+        self.userService = UserService(self.oracleExec) if UserService else None
+        self.productService = ProductService(self.oracleExec) if ProductService else None
+        
         self.setWindowTitle(f"Main Form - {self.username}")
         self.setMinimumSize(1100, 650)            
         self.init_ui()
@@ -47,12 +61,12 @@ class MainForm(QWidget):
         logo = QLabel("👨‍💼")
         logo.setFont(QFont("Segoe UI Emoji", 32))
         logo.setAlignment(Qt.AlignCenter)
-        logo.setStyleSheet("color: white;")
+        logo.setStyleSheet("color: white; border: none;")
         
         name_label = QLabel(f"Người dùng: {self.username}")
         name_label.setFont(QFont("Segoe UI", 11, QFont.Bold))
         name_label.setAlignment(Qt.AlignCenter)
-        name_label.setStyleSheet("color: white; margin-top: 10px;")
+        name_label.setStyleSheet("color: white; margin-top: 10px; border: none;")
         
         header_layout.addWidget(logo)
         header_layout.addWidget(name_label)
@@ -98,9 +112,9 @@ class MainForm(QWidget):
         # Connect buttons
         self.btn_employees.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(0))
         self.btn_products.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(1))
-        self.btn_profile.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(0))
-        self.btn_activity.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(1))
-        self.btn_orders.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(2))
+        self.btn_profile.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(2))
+        self.btn_activity.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(3))
+        self.btn_orders.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(4))
         self.btn_logout.clicked.connect(self.handle_logout)
 
         sidebar_layout.addWidget(header)
@@ -203,19 +217,6 @@ class MainForm(QWidget):
         header.setFont(QFont("Segoe UI", 20, QFont.Bold))
         header.setStyleSheet("color: #2c3e50; margin-bottom: 10px;")
 
-        stats_layout = QHBoxLayout()
-        stats_layout.setSpacing(15)
-
-        stats = [
-            ("📝", "Đơn Hàng Xử Lý", "0", "#3498db"),
-            ("✅", "Hoàn Thành", "0", "#27ae60"),
-            ("⏳", "Đang Xử Lý", "0", "#f39c12"),
-        ]
-
-        for icon, title, value, color in stats:
-            card = self.create_stat_card(icon, title, value, color)
-            stats_layout.addWidget(card)
-
         activity_table = QTableWidget()
         activity_table.setColumnCount(5)
         activity_table.setHorizontalHeaderLabels(["Thời Gian", "Hành Động", "Bảng", "Chi Tiết", "IP Address"])
@@ -227,6 +228,7 @@ class MainForm(QWidget):
                 border: 1px solid #bdc3c7;
                 border-radius: 5px;
                 gridline-color: #ecf0f1;
+                outline: none;
             }
             QHeaderView::section {
                 background-color: #34495e;
@@ -239,10 +241,15 @@ class MainForm(QWidget):
                 padding: 8px;
                 color: #2c3e50;
                 border: none;
+                outline: none;
             }
             QTableWidget::item:selected {
                 background-color: #3498db;
                 color: white;
+            }
+            QTableWidget::item:focus {
+                outline: none;
+                border: none;
             }
             QTableCornerButton::section {
                 background-color: #34495e;
@@ -272,8 +279,6 @@ class MainForm(QWidget):
                 activity_table.setItem(row, col, item)
 
         layout.addWidget(header)
-        layout.addLayout(stats_layout)
-        layout.addSpacing(20)
         layout.addWidget(activity_table)
 
         return page
@@ -287,6 +292,17 @@ class MainForm(QWidget):
         header = QLabel("📦 ĐƠN HÀNG CỦA TÔI")
         header.setFont(QFont("Segoe UI", 20, QFont.Bold))
         header.setStyleSheet("color: #2c3e50; margin-bottom: 10px;")
+
+        # Stats section - individual cards
+        card1 = self.create_stat_card("📝", "Tổng Đơn Hàng", "0", "#3498db")
+        card2 = self.create_stat_card("✅", "Hoàn Thành", "0", "#27ae60")
+        card3 = self.create_stat_card("⏳", "Đang Xử Lý", "0", "#f39c12")
+        
+        stats_layout = QHBoxLayout()
+        stats_layout.setSpacing(15)
+        stats_layout.addWidget(card1)
+        stats_layout.addWidget(card2)
+        stats_layout.addWidget(card3)
 
         btn_layout = QHBoxLayout()
         btn_refresh = QPushButton("🔄 Làm Mới")
@@ -307,6 +323,7 @@ class MainForm(QWidget):
                 border: 1px solid #bdc3c7;
                 border-radius: 5px;
                 gridline-color: #ecf0f1;
+                outline: none;
             }
             QHeaderView::section {
                 background-color: #34495e;
@@ -319,10 +336,15 @@ class MainForm(QWidget):
                 padding: 8px;
                 color: #2c3e50;
                 border: none;
+                outline: none;
             }
             QTableWidget::item:selected {
                 background-color: #3498db;
                 color: white;
+            }
+            QTableWidget::item:focus {
+                outline: none;
+                border: none;
             }
             QTableCornerButton::section {
                 background-color: #34495e;
@@ -339,6 +361,8 @@ class MainForm(QWidget):
         btn_refresh.clicked.connect(lambda: QMessageBox.information(self, "Làm mới", "Chức năng load dữ liệu (TODO)"))
 
         layout.addWidget(header)
+        layout.addLayout(stats_layout)
+        layout.addSpacing(20)
         layout.addLayout(btn_layout)
         layout.addSpacing(10)
         layout.addWidget(orders_table)
@@ -380,6 +404,7 @@ class MainForm(QWidget):
                 border: 1px solid #bdc3c7;
                 border-radius: 5px;
                 gridline-color: #ecf0f1;
+                outline: none;
             }
             QHeaderView::section {
                 background-color: #34495e;
@@ -392,10 +417,15 @@ class MainForm(QWidget):
                 padding: 8px;
                 color: #2c3e50;
                 border: none;
+                outline: none;
             }
             QTableWidget::item:selected {
                 background-color: #3498db;
                 color: white;
+            }
+            QTableWidget::item:focus {
+                outline: none;
+                border: none;
             }
             QTableCornerButton::section {
                 background-color: #34495e;
@@ -451,6 +481,7 @@ class MainForm(QWidget):
                 border: 1px solid #bdc3c7;
                 border-radius: 5px;
                 gridline-color: #ecf0f1;
+                outline: none;
             }
             QHeaderView::section {
                 background-color: #34495e;
@@ -463,10 +494,15 @@ class MainForm(QWidget):
                 padding: 8px;
                 color: #2c3e50;
                 border: none;
+                outline: none;
             }
             QTableWidget::item:selected {
                 background-color: #3498db;
                 color: white;
+            }
+            QTableWidget::item:focus {
+                outline: none;
+                border: none;
             }
             QTableCornerButton::section {
                 background-color: #34495e;
@@ -488,29 +524,71 @@ class MainForm(QWidget):
 
         return page
 
+    # =========================================================================
+    # PHẦN ĐÃ SỬA LỖI (FIXED)
+    # =========================================================================
     def create_stat_card(self, icon, title, value, color):
         card = QFrame()
-        card.setStyleSheet(f"background-color: white; border-radius: 10px; border-left: 5px solid {color};")
-        card.setFixedHeight(120)
+        # 1. Đặt ID cho thẻ để dùng selector
+        card.setObjectName("statCard")
         
-        layout = QVBoxLayout(card)
-        layout.setContentsMargins(20, 15, 20, 15)
+        # 2. Sử dụng selector #statCard để style KHÔNG ảnh hưởng đến con bên trong
+        card.setStyleSheet(f"""
+            #statCard {{
+                background-color: white; 
+                border-radius: 10px; 
+                border-left: 5px solid {color};
+            }}
+        """)
+        card.setFixedHeight(130)
+        
+        layout = QHBoxLayout(card)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(15)
 
+        # Icon container
+        icon_container = QFrame()
+        icon_container.setFixedSize(60, 60)
+        # Style cụ thể cho icon container
+        icon_container.setStyleSheet(
+            f"""
+            QFrame {{
+                background-color: {color}; 
+                border-radius: 30px;
+                border: none;
+            }}
+            """
+        )
+        icon_container_layout = QVBoxLayout(icon_container)
+        icon_container_layout.setContentsMargins(0, 0, 0, 0)
+        
         icon_label = QLabel(icon)
-        icon_label.setFont(QFont("Segoe UI Emoji", 24))
-        icon_label.setStyleSheet(f"color: {color};")
+        icon_label.setFont(QFont("Segoe UI Emoji", 28))
+        # Set background transparent và border none
+        icon_label.setStyleSheet("color: white; background: transparent; border: none;")
+        icon_label.setAlignment(Qt.AlignCenter)
+        icon_container_layout.addWidget(icon_label)
+
+        # Text info
+        info_layout = QVBoxLayout()
+        info_layout.setSpacing(5)
 
         title_label = QLabel(title)
-        title_label.setFont(QFont("Segoe UI", 9))
-        title_label.setStyleSheet("color: #7f8c8d;")
+        title_label.setFont(QFont("Segoe UI", 10))
+        # Đảm bảo không dính border
+        title_label.setStyleSheet("color: #7f8c8d; border: none; background: transparent;")
 
         value_label = QLabel(value)
-        value_label.setFont(QFont("Segoe UI", 20, QFont.Bold))
-        value_label.setStyleSheet(f"color: {color};")
+        value_label.setFont(QFont("Segoe UI", 24, QFont.Bold))
+        # Đảm bảo không dính border
+        value_label.setStyleSheet(f"color: {color}; border: none; background: transparent;")
 
-        layout.addWidget(icon_label)
-        layout.addWidget(title_label)
-        layout.addWidget(value_label)
+        info_layout.addWidget(title_label)
+        info_layout.addWidget(value_label)
+        info_layout.addStretch()
+
+        layout.addWidget(icon_container)
+        layout.addLayout(info_layout)
         layout.addStretch()
 
         return card
@@ -525,7 +603,6 @@ class MainForm(QWidget):
             self.employee_table.setRowCount(0)
             return
         
-        # Lấy danh sách các key từ nhân viên đầu tiên
         column_headers = list(employees[0].keys())
         
         self.employee_table.setColumnCount(len(column_headers))
@@ -550,7 +627,6 @@ class MainForm(QWidget):
             self.product_table.setRowCount(0)
             return
         
-        # Lấy danh sách các key từ sản phẩm đầu tiên
         column_headers = list(products[0].keys())
 
         self.product_table.setColumnCount(len(column_headers))
