@@ -728,7 +728,7 @@ class MainForm(QWidget):
             item = self.product_table.item(row, col_idx)
             product_data[headers[col_idx]] = item.text() if item else ""
         
-        dialog = ProductDetailDialog(product_data, self)
+        dialog = ProductDetailDialog(product_data, self.oracleExec, self)
         dialog.exec()
         
     def handle_delete_product(self):
