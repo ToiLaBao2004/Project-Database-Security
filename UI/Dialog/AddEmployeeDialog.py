@@ -5,10 +5,14 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
+from BAL.UserService import UserService
+from models.EmployeeModel import EmployeeModel
 
 class AddEmployeeDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, oracleExec, parent=None):
         super().__init__(parent)
+        self.oracleExec = oracleExec
+        self.userService = UserService(self.oracleExec)
         self.setWindowTitle("Thêm Nhân Viên Mới")
         self.setMinimumSize(700, 600)
         self.input_fields = {}
@@ -81,7 +85,7 @@ class AddEmployeeDialog(QDialog):
             ("📧 Email:", "email", "example@email.com"),
             ("🔑 Username:", "username", "Nhập username"),
             ("🔒 Password:", "password", "Nhập mật khẩu"),
-            ("🏷️ Role:", "role", "EMP/MGR/ADMIN"),
+            ("🏷️ Role:", "role", "EMP/MGR"),
         ]
 
         row = 0
@@ -128,6 +132,7 @@ class AddEmployeeDialog(QDialog):
         # ================= BUTTONS =================
         btn_layout = QHBoxLayout()
         btn_layout.setContentsMargins(30, 15, 30, 15)
+        btn_layout.addStretch()
 
         btn_cancel = QPushButton("✖ Hủy")
         btn_cancel.setFixedSize(120, 45)
@@ -148,6 +153,7 @@ class AddEmployeeDialog(QDialog):
             }
         """)
         btn_cancel.clicked.connect(self.reject)
+        btn_layout.addWidget(btn_cancel)
 
         btn_save = QPushButton("💾 Lưu")
         btn_save.setFixedSize(120, 45)
@@ -167,14 +173,15 @@ class AddEmployeeDialog(QDialog):
                 background-color: #1e8449;
             }
         """)
-        btn_save.clicked.connect(self.validate_and_accept)
+        btn_layout.addWidget(btn_save)
+        btn_save.clicked.connect(self.validate_and_create)
 
         # ================= MAIN LAYOUT =================
         main_layout.addWidget(header_frame)
         main_layout.addWidget(scroll_area)
         main_layout.addLayout(btn_layout)
 
-    def validate_and_accept(self):
+    def validate_and_create(self):
         """Validate form and accept if valid"""
         # Check if all required fields are filled
         required_fields = ["name", "dob", "gender", "address", "phone_number", "email", "username", "password", "role"]
@@ -191,6 +198,30 @@ class AddEmployeeDialog(QDialog):
         
         # If all valid, accept
         self.accept()
+        
+        data = self.get_employee_data()
+        print("Employee Data:", data)  # For debugging purposes
+        try:
+            employee = EmployeeModel(
+                name=data["name"],
+                dateofbirth=data["dob"],
+                gender=data["gender"],
+                address=data["address"],
+                phonenumber=data["phone_number"],
+                email=data["email"],
+                username=data["username"],
+                password=data["password"],
+                emp_role=data["role"]
+            )
+            
+            self.userService.create_employee(employee)
+            
+            QMessageBox.information(self, "Thành Công", f"Đã thêm nhân viên {data['name']} với ID {employee.id}")
+            return employee  # Trả về model để parent sử dụng nếu cần
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Lỗi", f"Lỗi khi thêm nhân viên: {str(e)}")
+            return None
 
     def get_employee_data(self):
         """Get employee data from form"""

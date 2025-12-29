@@ -1,18 +1,13 @@
 from pydantic import BaseModel
 from datetime import date
-from enum import StrEnum
-
-class ROLE(StrEnum):
-    MANAGER = "MGR"
-    EMPLOYEE = "EMP" 
 
 class EmployeeModel(BaseModel):
     id: int
     name: str
-    date_of_birth: date
+    dateofbirth: date
     gender: str
     address: str
-    phone_number:str
+    phonenumber:str
     email: str
     username: str
-    role: ROLE
+    emp_role: str
