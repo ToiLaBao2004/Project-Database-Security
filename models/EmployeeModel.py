@@ -1,14 +1,15 @@
 from pydantic import BaseModel
 from datetime import date
 from typing import Optional
+
 class EmployeeModel(BaseModel):
     id: Optional[int]=None
-    name: str
-    dateofbirth: date
-    gender: str
-    address: str
-    phonenumber:str
+    name: Optional[str]=None
+    dateofbirth: Optional[date]=None
+    gender: Optional[bool]=None
+    address: str 
+    phonenumber:str 
     email: str
-    username: str
-    password: str
-    emp_role: str
+    username: Optional[str]=None
+    password: Optional[str]=None
+    emp_role: Optional[str]=None

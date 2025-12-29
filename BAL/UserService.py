@@ -1,5 +1,6 @@
 from BAL.OracleExec import OracleExec
 from models.EmployeeModel import EmployeeModel
+import datetime
 from oracledb import DatabaseError
 class UserService:
     def __init__(self, oracleExec: OracleExec):
@@ -39,33 +40,41 @@ class UserService:
         
     def update_employee(self, employee: EmployeeModel):
         query="""UPDATE APP_SERVICE.EMPLOYEES SET 
-                                                name=:name,
-                                                dateOfBirth=:date_of_birth,
-                                                gender=:gender,
                                                 address=:address,
                                                 phoneNumber=:phone_number,
                                                 email=:email
                                                 WHERE id=:employee_id"""
         try:
-            self.oracleExec.execute(query,{"name":employee.name,
-                                           "date_of_birth":employee.date_of_birth,
-                                           "gender":employee.gender,
+            self.oracleExec.execute(query,{
                                            "address":employee.address,
-                                           "phone_number":employee.phone_number,
+                                           "phone_number":employee.phonenumber,
                                            "email":employee.email,
                                            "employee_id":employee.id})
         except DatabaseError as e:
             raise DatabaseError (f"Error updating employee {employee.username} ",e)
         
-    def get_all_employee_info(self, keyword="", type_search=None):
+    def deactive_employee(self, username: str):
+        query=f"""ALTER USER {username} ACCOUNT LOCK"""
         
         try:
+            self.oracleExec.execute(query,{})
+        except DatabaseError as e:
+            raise DatabaseError(f"Error LOCKED user {username} ",e)
+        
+    def get_all_employee_info(self, keyword="", type_search=None):
+        try:
             if type_search is None:
-                query="""SELECT * FROM APP_SERVICE.EMPLOYEES"""
+                query="""SELECT * FROM APP_SERVICE.EMPLOYEES e WHERE EXISTS (SELECT 1 FROM DBA_USERS u 
+                                                                    WHERE u.username = upper(e.username) 
+                                                                    AND u.account_status = 'OPEN')"""
                 return self.oracleExec.fetch_all(query)
             else:
-                query=f"""SELECT * FROM APP_SERVICE.EMPLOYEES WHERE :keyword= {type_search}"""
-                return self.oracleExec.fetch_all(query,{"keyword":keyword})
+                query=f"""SELECT * FROM APP_SERVICE.EMPLOYEES WHERE :keyword= {type_search} AND EXISTS 
+                                                                    (SELECT 1 FROM DBA_USERS u 
+                                                                    WHERE u.username = upper(username) 
+                                                                    AND u.account_status = 'OPEN')"""
+                return self.oracleExec.fetch_all(query, {"keyword": keyword})
+                
         except DatabaseError as e:
-            raise ValueError("Cannot get employee info" ,e)
-        
+            raise ValueError("Cannot get employee info", e)
+            
