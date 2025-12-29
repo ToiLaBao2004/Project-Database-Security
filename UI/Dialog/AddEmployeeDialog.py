@@ -200,7 +200,6 @@ class AddEmployeeDialog(QDialog):
         self.accept()
         
         data = self.get_employee_data()
-        print("Employee Data:", data)  # For debugging purposes
         try:
             employee = EmployeeModel(
                 name=data["name"],

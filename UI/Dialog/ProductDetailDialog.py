@@ -4,6 +4,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QPixmap
+import os  # Added for path handling
 
 class ProductDetailDialog(QDialog):
     def __init__(self, product_data, parent=None):
@@ -15,6 +16,7 @@ class ProductDetailDialog(QDialog):
         self.setWindowTitle(f"Chi Tiết Sản Phẩm - {product_data.get('NAME', 'N/A')}")
         self.setMinimumSize(800, 600)
         self.init_ui()
+        self.load_initial_image()  # Load initial image after UI is set up
 
     def init_ui(self):
         main_layout = QVBoxLayout(self)
@@ -276,6 +278,35 @@ class ProductDetailDialog(QDialog):
         layout.addLayout(grid)
         return section
 
+    def load_initial_image(self):
+        """Load initial image from product_data['IMAGE'] if available"""
+        image_key = self.product_data.get('IMAGE', None)
+        if image_key and image_key != 'N/A':
+            # Compute absolute path to images folder relative to script location
+            # Assuming script is in UI/Dialog/, images is in UI/images/
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            images_dir = os.path.join(script_dir, '..', 'images')
+            image_path = os.path.join(images_dir, image_key)
+            
+            # Check if file exists
+            if os.path.exists(image_path):
+                pixmap = QPixmap(image_path)
+                if not pixmap.isNull():
+                    scaled_pixmap = pixmap.scaled(
+                        180, 180,
+                        Qt.KeepAspectRatio,
+                        Qt.SmoothTransformation
+                    )
+                    self.image_preview.setPixmap(scaled_pixmap)
+                    self.image_preview.setStyleSheet("border: none; background: transparent;")
+                    self.image_path = image_path  # Store absolute path
+                else:
+                    self.image_preview.setText("📷\nKhông thể tải hình ảnh")
+                    QMessageBox.warning(self, "Lỗi", f"Không thể tải hình ảnh từ đường dẫn: {image_path}")
+            else:
+                self.image_preview.setText("📷\nFile không tồn tại")
+                QMessageBox.warning(self, "Lỗi", f"File không tồn tại tại đường dẫn: {image_path}")
+
     def select_image(self):
         """Open file dialog to select image"""
         file_path, _ = QFileDialog.getOpenFileName(
@@ -298,9 +329,10 @@ class ProductDetailDialog(QDialog):
                 self.image_preview.setPixmap(scaled_pixmap)
                 self.image_preview.setStyleSheet("border: none; background: transparent;")
                 
-                # Update IMAGE field with file path
+                # Update IMAGE field with filename (assuming it will be copied to images/ later)
+                filename = os.path.basename(file_path)
                 if 'IMAGE' in self.value_widgets:
-                    self.value_widgets['IMAGE'].setText(file_path)
+                    self.value_widgets['IMAGE'].setText(filename)
             else:
                 QMessageBox.warning(self, "Lỗi", "Không thể tải hình ảnh!")
 
