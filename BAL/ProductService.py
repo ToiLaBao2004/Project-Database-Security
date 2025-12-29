@@ -18,6 +18,23 @@ class ProductService:
         except DatabaseError as e:
             raise ValueError("Cannot get product info" ,e)
         
+    def create_product(self, product):
+        query = """INSERT INTO APP_SERVICE.PRODUCTS 
+                   (id, name, image, unitprice, stockquantity, categoryid, brandid, active) 
+                   VALUES (APP_SERVICE.seq_products.NEXTVAL, :name, :image, :unitprice, :stockquantity, :categoryid, :brandid, :active)"""
+        try:
+            self.oracleExec.execute(query, {
+                "name": product.name,
+                "image": product.image,
+                "unitprice": product.unit_price,
+                "stockquantity": product.stock_quantity,
+                "categoryid": product.category_id,
+                "brandid": product.brand_id,
+                "active": product.active
+            })
+        except DatabaseError as e:
+            raise DatabaseError(f"Error creating product {product.name}: {e}")
+        
     def deactivate_product(self, product_id: int):
         query="""UPDATE APP_SERVICE.PRODUCTS SET 
                                                 ACTIVE=false

@@ -1,6 +1,7 @@
 from pydantic import BaseModel
+from typing import Optional
 class ProductModel(BaseModel):
-    id: int
+    id: Optional[int]=None
     name: str
     image: str
     unit_price: int

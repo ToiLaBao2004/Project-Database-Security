@@ -681,7 +681,7 @@ class MainForm(QWidget):
             QMessageBox.warning(self, "Lỗi", "Chưa import được form thêm sản phẩm")
             return
             
-        dialog = AddProductDialog(self)
+        dialog = AddProductDialog(self.oracleExec, self)
         if dialog.exec():
             new_product = dialog.get_product_data()
             if new_product:
