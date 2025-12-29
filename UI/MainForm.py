@@ -12,6 +12,7 @@ from datetime import date, datetime
 try:
     from BAL.UserService import UserService
     from BAL.ProductService import ProductService
+    from BAL.OrderService import OrderService
     from UI.Dialog.EmployeeDialog import EmployeeDetailDialog
     from UI.Dialog.AddEmployeeDialog import AddEmployeeDialog
     from UI.Dialog.AddProductDialog import AddProductDialog
@@ -35,6 +36,7 @@ class MainForm(QWidget):
         # Khởi tạo service nếu import thành công
         self.userService = UserService(self.oracleExec) if UserService else None
         self.productService = ProductService(self.oracleExec) if ProductService else None
+        self.orderService = OrderService(self.oracleExec) if OrderService else None
         
         self.setWindowTitle(f"Main Form - {self.username}")
         self.setMinimumSize(1100, 650)            
