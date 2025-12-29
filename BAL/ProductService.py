@@ -18,3 +18,12 @@ class ProductService:
         except DatabaseError as e:
             raise ValueError("Cannot get product info" ,e)
         
+    def deactivate_product(self, product_id: int):
+        query="""UPDATE APP_SERVICE.PRODUCTS SET 
+                                                ACTIVE=false
+                                                WHERE id=:product_id"""
+        try:
+            self.oracleExec.execute(query,{"product_id":product_id})
+        except DatabaseError as e:
+            raise DatabaseError (f"Error deactivating product ID {product_id} ",e)
+        

@@ -513,7 +513,7 @@ class MainForm(QWidget):
         self.load_product_data()
 
         btn_add.clicked.connect(self.show_add_product_form)
-        btn_delete.clicked.connect(lambda: QMessageBox.information(self, "Xóa", "Chức năng xóa sản phẩm (TODO)"))
+        btn_delete.clicked.connect(self.handle_delete_product)
         btn_refresh.clicked.connect(self.load_product_data)
         self.product_table.cellClicked.connect(self.show_product_detail)
 
@@ -702,3 +702,28 @@ class MainForm(QWidget):
         
         dialog = ProductDetailDialog(product_data, self)
         dialog.exec()
+        
+    def handle_delete_product(self):
+        selected_items = self.product_table.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "Chưa Chọn", "Vui lòng chọn sản phẩm để xóa.")
+            return
+        
+        selected_row = selected_items[0].row()
+        product_id_item = self.product_table.item(selected_row, 0)
+        if not product_id_item:
+            QMessageBox.warning(self, "Lỗi", "Không thể lấy ID sản phẩm.")
+            return
+        
+        product_id = int(product_id_item.text())
+        
+        reply = QMessageBox.question(self, "Xác Nhận Xóa",
+                                     f"Bạn có chắc chắn muốn xóa sản phẩm ID {product_id}?",
+                                     QMessageBox.Yes | QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            try:
+                self.productService.deactivate_product(product_id)
+                QMessageBox.information(self, "Thành Công", f"Đã xóa sản phẩm ID {product_id}.")
+                self.load_product_data()
+            except Exception as e:
+                QMessageBox.critical(self, "Lỗi", f"Lỗi khi xóa sản phẩm: {str(e)}")
