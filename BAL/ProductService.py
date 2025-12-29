@@ -35,6 +35,29 @@ class ProductService:
         except DatabaseError as e:
             raise DatabaseError(f"Error creating product {product.name}: {e}")
         
+    def update_product(self, product):
+        query="""UPDATE APP_SERVICE.PRODUCTS SET 
+                                                name=:name,
+                                                image=:image,
+                                                unitprice=:unitprice,
+                                                stockquantity=:stockquantity,
+                                                categoryid=:categoryid,
+                                                brandid=:brandid,
+                                                active=:active
+                                                WHERE id=:product_id"""
+        try:
+            self.oracleExec.execute(query,{
+                                           "name":product.name,
+                                           "image":product.image,
+                                           "unitprice":product.unit_price,
+                                           "stockquantity":product.stock_quantity,
+                                           "categoryid":product.category_id,
+                                           "brandid":product.brand_id,
+                                           "active":product.active,
+                                           "product_id":product.id})
+        except DatabaseError as e:
+            raise DatabaseError (f"Error updating product ID {product.id} ",e)
+        
     def deactivate_product(self, product_id: int):
         query="""UPDATE APP_SERVICE.PRODUCTS SET 
                                                 ACTIVE=false
