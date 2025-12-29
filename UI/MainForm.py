@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import (
     QWidget, QLabel, QPushButton, QHBoxLayout, QVBoxLayout, QFrame,
     QMessageBox, QTableWidget, QTableWidgetItem, QHeaderView, QStackedWidget,
-    QGridLayout, QScrollArea, QLineEdit, QComboBox
+    QGridLayout, QScrollArea, QLineEdit, QComboBox, QSpinBox
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
@@ -289,90 +289,329 @@ class MainForm(QWidget):
     def create_orders_page(self):
         page = QWidget()
         page.setStyleSheet("background-color: #ecf0f1;")
-        layout = QVBoxLayout(page)
-        layout.setContentsMargins(30, 30, 30, 30)
+        main_layout = QVBoxLayout(page)
+        main_layout.setContentsMargins(30, 30, 30, 30)
+        main_layout.setSpacing(20)
 
-        header = QLabel("📦 ĐƠN HÀNG CỦA TÔI")
+        # Header with view orders button
+        header_layout = QHBoxLayout()
+        header = QLabel("🛒 TẠO ĐƠN HÀNG")
         header.setFont(QFont("Segoe UI", 20, QFont.Bold))
         header.setStyleSheet("color: #2c3e50; margin-bottom: 10px;")
-
-        # Stats section - individual cards
-        card1 = self.create_stat_card("📝", "Tổng Đơn Hàng", "0", "#3498db")
-        card2 = self.create_stat_card("✅", "Hoàn Thành", "0", "#27ae60")
-        card3 = self.create_stat_card("⏳", "Đang Xử Lý", "0", "#f39c12")
         
-        stats_layout = QHBoxLayout()
-        stats_layout.setSpacing(15)
-        stats_layout.addWidget(card1)
-        stats_layout.addWidget(card2)
-        stats_layout.addWidget(card3)
+        btn_view_orders = QPushButton("📋 Xem Lịch Sử Đơn Hàng")
+        btn_view_orders.setFixedHeight(40)
+        btn_view_orders.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        btn_view_orders.setStyleSheet("""
+            QPushButton {
+                background-color: #9b59b6;
+                color: white;
+                border-radius: 8px;
+                padding: 0 20px;
+                border: none;
+            }
+            QPushButton:hover {
+                background-color: #8e44ad;
+            }
+        """)
+        btn_view_orders.setCursor(Qt.PointingHandCursor)
+        btn_view_orders.clicked.connect(self.view_order_history)
+        
+        header_layout.addWidget(header)
+        header_layout.addStretch()
+        header_layout.addWidget(btn_view_orders)
+        main_layout.addLayout(header_layout)
 
-        btn_layout = QHBoxLayout()
-        btn_refresh = QPushButton("🔄 Làm Mới")
-        btn_refresh.setFixedHeight(40)
-        btn_refresh.setFont(QFont("Segoe UI", 10, QFont.Bold))
-        btn_refresh.setCursor(Qt.PointingHandCursor)
-        btn_layout.addWidget(btn_refresh)
-        btn_layout.addStretch()
+        # Content layout - 2 columns
+        content_layout = QHBoxLayout()
+        content_layout.setSpacing(20)
 
-        self.orders_table = QTableWidget()
-        self.orders_table.setColumnCount(6)
-        self.orders_table.setHorizontalHeaderLabels(["Mã ĐH", "Khách Hàng", "Ngày Tạo", "Tổng Tiền", "Trạng Thái", "Ghi Chú"])
-        self.orders_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.orders_table.setAlternatingRowColors(True)
-        self.orders_table.setStyleSheet("""
+        # ============= LEFT SIDE: PRODUCT LIST =============
+        left_panel = QFrame()
+        left_panel.setStyleSheet("background-color: white; border-radius: 10px; border: 1px solid #bdc3c7;")
+        left_layout = QVBoxLayout(left_panel)
+        left_layout.setContentsMargins(20, 20, 20, 20)
+        left_layout.setSpacing(15)
+
+        # Product list header
+        product_header = QLabel("📦 DANH SÁCH SẢN PHẨM")
+        product_header.setFont(QFont("Segoe UI", 14, QFont.Bold))
+        product_header.setStyleSheet("color: #2c3e50;")
+        left_layout.addWidget(product_header)
+
+        # Search for products
+        search_layout = QHBoxLayout()
+        self.order_product_search = QLineEdit()
+        self.order_product_search.setPlaceholderText("🔍 Tìm kiếm sản phẩm...")
+        self.order_product_search.setFixedHeight(35)
+        self.order_product_search.setStyleSheet("""
+            QLineEdit {
+                background-color: #f8f9fa;
+                border: 2px solid #e0e6ed;
+                border-radius: 8px;
+                padding: 8px 12px;
+                font-size: 11px;
+            }
+            QLineEdit:focus {
+                border: 2px solid #3498db;
+            }
+        """)
+        self.order_product_search.textChanged.connect(self.search_order_products)
+        search_layout.addWidget(self.order_product_search)
+
+        # Refresh button
+        btn_refresh_products = QPushButton("🔄")
+        btn_refresh_products.setFixedSize(35, 35)
+        btn_refresh_products.setStyleSheet("""
+            QPushButton {
+                background-color: #3498db;
+                color: white;
+                border-radius: 8px;
+                font-size: 14px;
+                border: none;
+            }
+            QPushButton:hover {
+                background-color: #2980b9;
+            }
+        """)
+        btn_refresh_products.setCursor(Qt.PointingHandCursor)
+        btn_refresh_products.clicked.connect(self.load_order_products)
+        search_layout.addWidget(btn_refresh_products)
+        
+        left_layout.addLayout(search_layout)
+
+        # Product table
+        self.order_product_table = QTableWidget()
+        self.order_product_table.setColumnCount(5)
+        self.order_product_table.setHorizontalHeaderLabels(["ID", "Tên Sản Phẩm", "Giá", "Tồn Kho", ""])
+        self.order_product_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        self.order_product_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+        self.order_product_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        self.order_product_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
+        self.order_product_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeToContents)
+        self.order_product_table.setAlternatingRowColors(True)
+        self.order_product_table.setSelectionBehavior(QTableWidget.SelectRows)
+        self.order_product_table.setStyleSheet("""
             QTableWidget {
                 background-color: white;
-                border: 1px solid #bdc3c7;
-                border-radius: 5px;
                 gridline-color: #ecf0f1;
+                border: none;
                 outline: none;
             }
             QHeaderView::section {
                 background-color: #34495e;
                 color: white;
-                padding: 10px;
+                padding: 8px;
                 border: none;
                 font-weight: bold;
+                font-size: 11px;
             }
             QTableWidget::item {
-                padding: 8px;
+                padding: 5px;
                 color: #2c3e50;
-                border: none;
-                outline: none;
             }
             QTableWidget::item:selected {
                 background-color: #3498db;
                 color: white;
             }
-            QTableWidget::item:focus {
-                outline: none;
-                border: none;
+        """)
+        left_layout.addWidget(self.order_product_table)
+
+        # ============= RIGHT SIDE: SHOPPING CART =============
+        right_panel = QFrame()
+        right_panel.setStyleSheet("background-color: white; border-radius: 10px; border: 1px solid #bdc3c7;")
+        right_layout = QVBoxLayout(right_panel)
+        right_layout.setContentsMargins(20, 20, 20, 20)
+        right_layout.setSpacing(15)
+
+        # Cart header
+        cart_header = QLabel("🛒 GIỎ HÀNG")
+        cart_header.setFont(QFont("Segoe UI", 14, QFont.Bold))
+        cart_header.setStyleSheet("color: #2c3e50;")
+        right_layout.addWidget(cart_header)
+
+        # Customer info section
+        customer_frame = QFrame()
+        customer_frame.setStyleSheet("background-color: #f8f9fa; border-radius: 8px; padding: 10px;")
+        customer_layout = QVBoxLayout(customer_frame)
+        customer_layout.setSpacing(10)
+        
+        # Customer name
+        name_layout = QHBoxLayout()
+        name_label = QLabel("👤 Tên khách hàng:")
+        name_label.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        name_label.setStyleSheet("color: #2c3e50; background: transparent; border: none;")
+        name_label.setMinimumWidth(140)
+        name_label.setWordWrap(False)
+        
+        self.customer_name_input = QLineEdit()
+        self.customer_name_input.setPlaceholderText("Nhập tên khách hàng...")
+        self.customer_name_input.setFixedHeight(32)
+        self.customer_name_input.setStyleSheet("""
+            QLineEdit {
+                background-color: white;
+                border: 2px solid #e0e6ed;
+                border-radius: 6px;
+                padding: 5px 10px;
+                font-size: 11px;
             }
-            QTableCornerButton::section {
-                background-color: #34495e;
-                border: none;
+            QLineEdit:focus {
+                border: 2px solid #3498db;
             }
         """)
-        self.orders_table.setRowCount(0)
-
-        note = QLabel("📝 Dữ liệu đơn hàng sẽ được load từ database khi tích hợp backend")
-        note.setFont(QFont("Segoe UI", 10))
-        note.setStyleSheet("color: #7f8c8d; padding: 10px;")
-        note.setAlignment(Qt.AlignCenter)
-
-        btn_refresh.clicked.connect(self.handle_load_orders)
-
-        layout.addWidget(header)
-        layout.addLayout(stats_layout)
-        layout.addSpacing(20)
-        layout.addLayout(btn_layout)
-        layout.addSpacing(10)
-        layout.addWidget(self.orders_table)
-        layout.addWidget(note)
         
-        self.handle_load_orders()
+        name_layout.addWidget(name_label)
+        name_layout.addWidget(self.customer_name_input)
+        customer_layout.addLayout(name_layout)
         
+        # Customer phone
+        phone_layout = QHBoxLayout()
+        phone_label = QLabel("📱 Số điện thoại:")
+        phone_label.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        phone_label.setStyleSheet("color: #2c3e50; background: transparent; border: none;")
+        phone_label.setMinimumWidth(140)
+        phone_label.setWordWrap(False)
+        
+        self.customer_phone_input = QLineEdit()
+        self.customer_phone_input.setPlaceholderText("Nhập số điện thoại...")
+        self.customer_phone_input.setFixedHeight(32)
+        self.customer_phone_input.setStyleSheet("""
+            QLineEdit {
+                background-color: white;
+                border: 2px solid #e0e6ed;
+                border-radius: 6px;
+                padding: 5px 10px;
+                font-size: 11px;
+            }
+            QLineEdit:focus {
+                border: 2px solid #3498db;
+            }
+        """)
+        
+        phone_layout.addWidget(phone_label)
+        phone_layout.addWidget(self.customer_phone_input)
+        customer_layout.addLayout(phone_layout)
+        
+        right_layout.addWidget(customer_frame)
+
+        # Cart table
+        self.cart_table = QTableWidget()
+        self.cart_table.setColumnCount(5)
+        self.cart_table.setHorizontalHeaderLabels(["Tên SP", "Đơn Giá", "SL", "Thành Tiền", ""])
+        
+        # Enable horizontal scrollbar
+        self.cart_table.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.cart_table.setHorizontalScrollMode(QTableWidget.ScrollPerPixel)
+        
+        # Set column widths to show all content
+        self.cart_table.horizontalHeader().setMinimumSectionSize(80)
+        self.cart_table.setColumnWidth(0, 150)  # Tên SP - wider
+        self.cart_table.setColumnWidth(1, 100)  # Đơn Giá
+        self.cart_table.setColumnWidth(2, 70)   # SL
+        self.cart_table.setColumnWidth(3, 110)  # Thành Tiền
+        self.cart_table.setColumnWidth(4, 50)   # Delete button
+        
+        self.cart_table.setAlternatingRowColors(True)
+        self.cart_table.setStyleSheet("""
+            QTableWidget {
+                background-color: white;
+                gridline-color: #ecf0f1;
+                border: none;
+                outline: none;
+            }
+            QHeaderView::section {
+                background-color: #27ae60;
+                color: white;
+                padding: 8px;
+                border: none;
+                font-weight: bold;
+                font-size: 11px;
+            }
+            QTableWidget::item {
+                padding: 5px;
+                color: #2c3e50;
+            }
+        """)
+        self.cart_table.setRowCount(0)
+        right_layout.addWidget(self.cart_table)
+
+        # Total section
+        total_frame = QFrame()
+        total_frame.setStyleSheet("background-color: #f8f9fa; border-radius: 8px; padding: 15px;")
+        total_layout = QVBoxLayout(total_frame)
+        
+        total_label_layout = QHBoxLayout()
+        total_text = QLabel("TỔNG CỘNG:")
+        total_text.setFont(QFont("Segoe UI", 12, QFont.Bold))
+        total_text.setStyleSheet("color: #2c3e50;")
+        
+        self.total_amount_label = QLabel("0 đ")
+        self.total_amount_label.setFont(QFont("Segoe UI", 16, QFont.Bold))
+        self.total_amount_label.setStyleSheet("color: #e74c3c;")
+        self.total_amount_label.setAlignment(Qt.AlignRight)
+        
+        total_label_layout.addWidget(total_text)
+        total_label_layout.addStretch()
+        total_label_layout.addWidget(self.total_amount_label)
+        total_layout.addLayout(total_label_layout)
+        
+        right_layout.addWidget(total_frame)
+
+        # Action buttons
+        btn_layout = QHBoxLayout()
+        btn_layout.setSpacing(10)
+        
+        btn_clear_cart = QPushButton("🗑️ Xóa Giỏ Hàng")
+        btn_clear_cart.setFixedHeight(40)
+        btn_clear_cart.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        btn_clear_cart.setStyleSheet("""
+            QPushButton {
+                background-color: #e74c3c;
+                color: white;
+                border-radius: 8px;
+                border: none;
+            }
+            QPushButton:hover {
+                background-color: #c0392b;
+            }
+        """)
+        btn_clear_cart.setCursor(Qt.PointingHandCursor)
+        btn_clear_cart.clicked.connect(self.clear_cart)
+        
+        btn_create_order = QPushButton("✅ Tạo Đơn Hàng")
+        btn_create_order.setFixedHeight(40)
+        btn_create_order.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        btn_create_order.setStyleSheet("""
+            QPushButton {
+                background-color: #27ae60;
+                color: white;
+                border-radius: 8px;
+                border: none;
+            }
+            QPushButton:hover {
+                background-color: #229954;
+            }
+        """)
+        btn_create_order.setCursor(Qt.PointingHandCursor)
+        btn_create_order.clicked.connect(self.create_order)
+        
+        btn_layout.addWidget(btn_clear_cart)
+        btn_layout.addWidget(btn_create_order)
+        right_layout.addLayout(btn_layout)
+
+        # Add panels to content layout
+        content_layout.addWidget(left_panel, 3)  # 60% width
+        content_layout.addWidget(right_panel, 2)  # 40% width
+
+        main_layout.addLayout(content_layout)
+
+        # Initialize cart data
+        self.cart_items = []  # List to store cart items: [{"id": ..., "name": ..., "price": ..., "quantity": ...}]
+        self.order_history = []  # List to store completed orders
+        
+        # Load products
+        self.load_order_products()
+
         return page
 
     def create_employee_page(self):
@@ -889,9 +1128,10 @@ class MainForm(QWidget):
         search_text = self.employee_search_input.text().strip().lower()
         search_type = self.employee_search_combo.currentText()
         
-        # Nếu không có từ khóa, hiển thị tất cả
+        # Nếu không có từ khóa, hiển thị tất cả các hàng
         if not search_text:
-            self.load_employee_data()
+            for row in range(self.employee_table.rowCount()):
+                self.employee_table.setRowHidden(row, False)
             return
         
         # Map thuộc tính tìm kiếm với tên cột trong database
@@ -939,9 +1179,10 @@ class MainForm(QWidget):
         search_text = self.product_search_input.text().strip().lower()
         search_type = self.product_search_combo.currentText()
         
-        # Nếu không có từ khóa, hiển thị tất cả
+        # Nếu không có từ khóa, hiển thị tất cả các hàng
         if not search_text:
-            self.load_product_data()
+            for row in range(self.product_table.rowCount()):
+                self.product_table.setRowHidden(row, False)
             return
         
         # Map thuộc tính tìm kiếm với tên cột trong database
@@ -982,26 +1223,286 @@ class MainForm(QWidget):
             
             if match:
                 self.product_table.setRowHidden(row, False)
+    
+    # =========================================================================
+    # ORDER / CART FUNCTIONS
+    # =========================================================================
+    def load_order_products(self):
+        """Load danh sách sản phẩm vào bảng order"""
+        if not self.productService:
+            self.order_product_table.setRowCount(0)
+            return
+
+        try:
+            products = self.productService.get_all_products()
+            if not products:
+                self.order_product_table.setRowCount(0)
+                return
+            
+            self.order_product_table.setRowCount(len(products))
+            
+            for row, product in enumerate(products):
+                # ID
+                id_item = QTableWidgetItem(str(product.get('id', '')))
+                id_item.setTextAlignment(Qt.AlignCenter)
+                self.order_product_table.setItem(row, 0, id_item)
                 
-    def handle_load_orders(self):
-        if not self.orderService:
-            self.orders_table.setRowCount(0)
-            return
-
-        orders = self.orderService.load_orders()
-        if not orders:
-            self.orders_table.setRowCount(0)
+                # Name
+                name_item = QTableWidgetItem(str(product.get('name', '')))
+                self.order_product_table.setItem(row, 1, name_item)
+                
+                # Price
+                price = product.get('unitprice', 0)
+                price_item = QTableWidgetItem(f"{price:,.0f} đ")
+                price_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+                self.order_product_table.setItem(row, 2, price_item)
+                
+                # Stock
+                stock = product.get('stockquantity', 0)
+                stock_item = QTableWidgetItem(str(stock))
+                stock_item.setTextAlignment(Qt.AlignCenter)
+                self.order_product_table.setItem(row, 3, stock_item)
+                
+                # Add button
+                btn_add = QPushButton("➕ Thêm")
+                btn_add.setStyleSheet("""
+                    QPushButton {
+                        background-color: #3498db;
+                        color: white;
+                        border-radius: 5px;
+                        padding: 5px 10px;
+                        font-weight: bold;
+                        border: none;
+                    }
+                    QPushButton:hover {
+                        background-color: #2980b9;
+                    }
+                """)
+                btn_add.setCursor(Qt.PointingHandCursor)
+                btn_add.clicked.connect(lambda checked, r=row: self.add_to_cart(r))
+                self.order_product_table.setCellWidget(row, 4, btn_add)
+                
+        except Exception as e:
+            QMessageBox.critical(self, "Lỗi", f"Không thể load sản phẩm: {str(e)}")
+    
+    def search_order_products(self):
+        """Tìm kiếm sản phẩm trong bảng order"""
+        search_text = self.order_product_search.text().strip().lower()
+        
+        if not search_text:
+            for row in range(self.order_product_table.rowCount()):
+                self.order_product_table.setRowHidden(row, False)
             return
         
-        column_headers = list(orders[0].keys())
-        self.orders_table.setColumnCount(len(column_headers))
-        self.orders_table.setHorizontalHeaderLabels(column_headers)
-
-        self.orders_table.setRowCount(len(orders))
+        for row in range(self.order_product_table.rowCount()):
+            match = False
+            for col in range(self.order_product_table.columnCount() - 1):  # Skip button column
+                item = self.order_product_table.item(row, col)
+                if item and search_text in item.text().lower():
+                    match = True
+                    break
+            self.order_product_table.setRowHidden(row, not match)
+    
+    def add_to_cart(self, row):
+        """Thêm sản phẩm vào giỏ hàng"""
+        try:
+            # Get product info from table
+            product_id = int(self.order_product_table.item(row, 0).text())
+            product_name = self.order_product_table.item(row, 1).text()
+            price_text = self.order_product_table.item(row, 2).text().replace(' đ', '').replace(',', '')
+            product_price = float(price_text)
+            stock = int(self.order_product_table.item(row, 3).text())
+            
+            if stock <= 0:
+                QMessageBox.warning(self, "Hết Hàng", f"Sản phẩm '{product_name}' đã hết hàng!")
+                return
+            
+            # Check if product already in cart
+            for item in self.cart_items:
+                if item['id'] == product_id:
+                    if item['quantity'] < stock:
+                        item['quantity'] += 1
+                        self.update_cart_display()
+                        return
+                    else:
+                        QMessageBox.warning(self, "Vượt Quá Tồn Kho", 
+                                          f"Không thể thêm. Tồn kho chỉ còn {stock} sản phẩm!")
+                        return
+            
+            # Add new item to cart
+            self.cart_items.append({
+                'id': product_id,
+                'name': product_name,
+                'price': product_price,
+                'quantity': 1,
+                'stock': stock
+            })
+            
+            self.update_cart_display()
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Lỗi", f"Không thể thêm vào giỏ hàng: {str(e)}")
+    
+    def update_cart_display(self):
+        """Cập nhật hiển thị giỏ hàng"""
+        self.cart_table.setRowCount(len(self.cart_items))
+        total = 0
         
-        for row, order_dict in enumerate(orders):
-            for col, key in enumerate(column_headers):
-                data = order_dict.get(key, "")
-                item = QTableWidgetItem(str(data) if data is not None else "")
-                item.setTextAlignment(Qt.AlignCenter)
-                self.orders_table.setItem(row, col, item)
+        for row, item in enumerate(self.cart_items):
+            # Product name
+            name_item = QTableWidgetItem(item['name'])
+            self.cart_table.setItem(row, 0, name_item)
+            
+            # Price
+            price_item = QTableWidgetItem(f"{item['price']:,.0f} đ")
+            price_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            self.cart_table.setItem(row, 1, price_item)
+            
+            # Quantity spinbox
+            quantity_spin = QSpinBox()
+            quantity_spin.setMinimum(1)
+            quantity_spin.setMaximum(item['stock'])
+            quantity_spin.setValue(item['quantity'])
+            quantity_spin.setAlignment(Qt.AlignCenter)
+            quantity_spin.valueChanged.connect(lambda val, r=row: self.update_cart_quantity(r, val))
+            self.cart_table.setCellWidget(row, 2, quantity_spin)
+            
+            # Subtotal
+            subtotal = item['price'] * item['quantity']
+            total += subtotal
+            subtotal_item = QTableWidgetItem(f"{subtotal:,.0f} đ")
+            subtotal_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            subtotal_item.setFont(QFont("Segoe UI", 10, QFont.Bold))
+            self.cart_table.setItem(row, 3, subtotal_item)
+            
+            # Remove button
+            btn_remove = QPushButton("🗑️")
+            btn_remove.setStyleSheet("""
+                QPushButton {
+                    background-color: #e74c3c;
+                    color: white;
+                    border-radius: 5px;
+                    padding: 5px;
+                    border: none;
+                }
+                QPushButton:hover {
+                    background-color: #c0392b;
+                }
+            """)
+            btn_remove.setCursor(Qt.PointingHandCursor)
+            btn_remove.clicked.connect(lambda checked, r=row: self.remove_from_cart(r))
+            self.cart_table.setCellWidget(row, 4, btn_remove)
+        
+        # Update total
+        self.total_amount_label.setText(f"{total:,.0f} đ")
+    
+    def update_cart_quantity(self, row, quantity):
+        """Cập nhật số lượng sản phẩm trong giỏ"""
+        if 0 <= row < len(self.cart_items):
+            self.cart_items[row]['quantity'] = quantity
+            self.update_cart_display()
+    
+    def remove_from_cart(self, row):
+        """Xóa sản phẩm khỏi giỏ hàng"""
+        if 0 <= row < len(self.cart_items):
+            product_name = self.cart_items[row]['name']
+            reply = QMessageBox.question(self, "Xác Nhận", 
+                                        f"Xóa '{product_name}' khỏi giỏ hàng?",
+                                        QMessageBox.Yes | QMessageBox.No)
+            if reply == QMessageBox.Yes:
+                self.cart_items.pop(row)
+                self.update_cart_display()
+    
+    def clear_cart(self):
+        """Xóa toàn bộ giỏ hàng"""
+        if not self.cart_items:
+            QMessageBox.information(self, "Thông Báo", "Giỏ hàng đang trống!")
+            return
+        
+        reply = QMessageBox.question(self, "Xác Nhận", 
+                                    "Bạn có chắc muốn xóa toàn bộ giỏ hàng?",
+                                    QMessageBox.Yes | QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            self.cart_items.clear()
+            self.update_cart_display()
+            QMessageBox.information(self, "Thành Công", "Đã xóa giỏ hàng!")
+    
+    def create_order(self):
+        """Tạo đơn hàng từ giỏ hàng"""
+        if not self.cart_items:
+            QMessageBox.warning(self, "Giỏ Hàng Trống", "Vui lòng thêm sản phẩm vào giỏ hàng!")
+            return
+        
+        # Validate customer info
+        customer_name = self.customer_name_input.text().strip()
+        customer_phone = self.customer_phone_input.text().strip()
+        
+        if not customer_name:
+            QMessageBox.warning(self, "Thiếu Thông Tin", "Vui lòng nhập tên khách hàng!")
+            self.customer_name_input.setFocus()
+            return
+        
+        if not customer_phone:
+            QMessageBox.warning(self, "Thiếu Thông Tin", "Vui lòng nhập số điện thoại!")
+            self.customer_phone_input.setFocus()
+            return
+        
+        total = sum(item['price'] * item['quantity'] for item in self.cart_items)
+        
+        # Create order summary
+        summary = "CHI TIẾT ĐƠN HÀNG:\n\n"
+        summary += f"👤 Khách hàng: {customer_name}\n"
+        summary += f"📱 Số điện thoại: {customer_phone}\n\n"
+        summary += "DANH SÁCH SẢN PHẨM:\n"
+        for item in self.cart_items:
+            subtotal = item['price'] * item['quantity']
+            summary += f"• {item['name']}\n"
+            summary += f"  {item['quantity']} x {item['price']:,.0f} đ = {subtotal:,.0f} đ\n\n"
+        summary += f"TỔNG CỘNG: {total:,.0f} đ"
+        
+        reply = QMessageBox.question(self, "Xác Nhận Đơn Hàng", 
+                                    summary + "\n\nXác nhận tạo đơn hàng?",
+                                    QMessageBox.Yes | QMessageBox.No)
+        
+        if reply == QMessageBox.Yes:
+            try:
+                # Save order to history
+                from datetime import datetime
+                order = {
+                    'order_id': len(self.order_history) + 1,
+                    'customer_name': customer_name,
+                    'customer_phone': customer_phone,
+                    'items': [item.copy() for item in self.cart_items],
+                    'total': total,
+                    'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    'employee': self.username
+                }
+                self.order_history.append(order)
+                
+                # TODO: Gọi API lưu đơn hàng vào database
+                # self.orderService.create_order(order)
+                
+                QMessageBox.information(self, "Thành Công", 
+                                      f"Đã tạo đơn hàng #{order['order_id']} thành công!\n"
+                                      f"Khách hàng: {customer_name}\n"
+                                      f"Tổng tiền: {total:,.0f} đ\n\n"
+                                      f"(Chức năng lưu vào database sẽ được thêm sau)")
+                
+                # Clear cart and customer info
+                self.cart_items.clear()
+                self.customer_name_input.clear()
+                self.customer_phone_input.clear()
+                self.update_cart_display()
+            except Exception as e:
+                QMessageBox.critical(self, "Lỗi", f"Không thể tạo đơn hàng: {str(e)}")
+    
+    def view_order_history(self):
+        """Xem lịch sử đơn hàng đã tạo"""
+        if not self.order_history:
+            QMessageBox.information(self, "Lịch Sử Đơn Hàng", "Chưa có đơn hàng nào được tạo!")
+            return
+        
+        # Open OrderHistoryDialog
+        from UI.Dialog.OrderHistoryDialog import OrderHistoryDialog
+        dialog = OrderHistoryDialog(self.order_history, self)
+        dialog.exec()
