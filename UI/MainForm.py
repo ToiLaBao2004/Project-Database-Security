@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import (
     QWidget, QLabel, QPushButton, QHBoxLayout, QVBoxLayout, QFrame,
     QMessageBox, QTableWidget, QTableWidgetItem, QHeaderView, QStackedWidget,
-    QGridLayout, QScrollArea, QLineEdit
+    QGridLayout, QScrollArea, QLineEdit, QComboBox
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
@@ -381,6 +381,66 @@ class MainForm(QWidget):
         header.setFont(QFont("Segoe UI", 20, QFont.Bold))
         header.setStyleSheet("color: #2c3e50; margin-bottom: 10px;")
 
+        # Search section
+        search_layout = QHBoxLayout()
+        search_layout.setSpacing(10)
+        
+        search_label = QLabel("🔍 Tìm kiếm:")
+        search_label.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        search_label.setStyleSheet("color: #2c3e50;")
+        
+        self.employee_search_combo = QComboBox()
+        self.employee_search_combo.addItems(["Tất cả", "Tên", "Email", "Số điện thoại", "Username", "Chức vụ"])
+        self.employee_search_combo.setFixedHeight(40)
+        self.employee_search_combo.setFixedWidth(180)
+        self.employee_search_combo.setStyleSheet("""
+            QComboBox {
+                background-color: white;
+                border: 2px solid #bdc3c7;
+                border-radius: 8px;
+                padding: 8px 12px;
+                font-size: 11px;
+                color: #2c3e50;
+            }
+            QComboBox:hover {
+                border: 2px solid #3498db;
+            }
+            QComboBox::drop-down {
+                border: none;
+                width: 30px;
+            }
+            QComboBox::down-arrow {
+                image: none;
+                border-left: 5px solid transparent;
+                border-right: 5px solid transparent;
+                border-top: 5px solid #2c3e50;
+                margin-right: 10px;
+            }
+        """)
+        
+        self.employee_search_input = QLineEdit()
+        self.employee_search_input.setPlaceholderText("Nhập từ khóa tìm kiếm...")
+        self.employee_search_input.setFixedHeight(40)
+        self.employee_search_input.setStyleSheet("""
+            QLineEdit {
+                background-color: white;
+                border: 2px solid #bdc3c7;
+                border-radius: 8px;
+                padding: 8px 15px;
+                font-size: 11px;
+                color: #2c3e50;
+            }
+            QLineEdit:focus {
+                border: 2px solid #3498db;
+            }
+        """)
+        self.employee_search_input.textChanged.connect(self.search_employees)
+        
+        search_layout.addWidget(search_label)
+        search_layout.addWidget(self.employee_search_combo)
+        search_layout.addWidget(self.employee_search_input)
+        search_layout.addStretch()
+
         btn_layout = QHBoxLayout()
         btn_add = QPushButton("➕ Thêm Nhân Viên")
         btn_delete = QPushButton("🗑️ Xóa Nhân Viên")
@@ -442,6 +502,8 @@ class MainForm(QWidget):
         self.employee_table.cellClicked.connect(self.show_employee_detail)
 
         layout.addWidget(header)
+        layout.addLayout(search_layout)
+        layout.addSpacing(10)
         layout.addLayout(btn_layout)
         layout.addSpacing(10)
         layout.addWidget(self.employee_table)
@@ -457,6 +519,66 @@ class MainForm(QWidget):
         header = QLabel("📦 QUẢN LÝ SẢN PHẨM")
         header.setFont(QFont("Segoe UI", 20, QFont.Bold))
         header.setStyleSheet("color: #2c3e50; margin-bottom: 10px;")
+
+        # Search section
+        search_layout = QHBoxLayout()
+        search_layout.setSpacing(10)
+        
+        search_label = QLabel("🔍 Tìm kiếm:")
+        search_label.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        search_label.setStyleSheet("color: #2c3e50;")
+        
+        self.product_search_combo = QComboBox()
+        self.product_search_combo.addItems(["Tất cả", "Tên sản phẩm", "ID", "Danh mục", "Thương hiệu"])
+        self.product_search_combo.setFixedHeight(40)
+        self.product_search_combo.setFixedWidth(180)
+        self.product_search_combo.setStyleSheet("""
+            QComboBox {
+                background-color: white;
+                border: 2px solid #bdc3c7;
+                border-radius: 8px;
+                padding: 8px 12px;
+                font-size: 11px;
+                color: #2c3e50;
+            }
+            QComboBox:hover {
+                border: 2px solid #3498db;
+            }
+            QComboBox::drop-down {
+                border: none;
+                width: 30px;
+            }
+            QComboBox::down-arrow {
+                image: none;
+                border-left: 5px solid transparent;
+                border-right: 5px solid transparent;
+                border-top: 5px solid #2c3e50;
+                margin-right: 10px;
+            }
+        """)
+        
+        self.product_search_input = QLineEdit()
+        self.product_search_input.setPlaceholderText("Nhập từ khóa tìm kiếm...")
+        self.product_search_input.setFixedHeight(40)
+        self.product_search_input.setStyleSheet("""
+            QLineEdit {
+                background-color: white;
+                border: 2px solid #bdc3c7;
+                border-radius: 8px;
+                padding: 8px 15px;
+                font-size: 11px;
+                color: #2c3e50;
+            }
+            QLineEdit:focus {
+                border: 2px solid #3498db;
+            }
+        """)
+        self.product_search_input.textChanged.connect(self.search_products)
+        
+        search_layout.addWidget(search_label)
+        search_layout.addWidget(self.product_search_combo)
+        search_layout.addWidget(self.product_search_input)
+        search_layout.addStretch()
 
         btn_layout = QHBoxLayout()
         btn_add = QPushButton("➕ Thêm Sản Phẩm")
@@ -519,6 +641,8 @@ class MainForm(QWidget):
         self.product_table.cellClicked.connect(self.show_product_detail)
 
         layout.addWidget(header)
+        layout.addLayout(search_layout)
+        layout.addSpacing(10)
         layout.addLayout(btn_layout)
         layout.addSpacing(10)
         layout.addWidget(self.product_table)
@@ -728,7 +852,7 @@ class MainForm(QWidget):
             item = self.product_table.item(row, col_idx)
             product_data[headers[col_idx]] = item.text() if item else ""
         
-        dialog = ProductDetailDialog(product_data, self)
+        dialog = ProductDetailDialog(product_data, self.oracleExec, self)
         dialog.exec()
         
     def handle_delete_product(self):
@@ -755,3 +879,102 @@ class MainForm(QWidget):
                 self.load_product_data()
             except Exception as e:
                 QMessageBox.critical(self, "Lỗi", f"Lỗi khi xóa sản phẩm: {str(e)}")
+    
+    def search_employees(self):
+        """Tìm kiếm nhân viên theo từ khóa và thuộc tính đã chọn"""
+        search_text = self.employee_search_input.text().strip().lower()
+        search_type = self.employee_search_combo.currentText()
+        
+        # Nếu không có từ khóa, hiển thị tất cả
+        if not search_text:
+            self.load_employee_data()
+            return
+        
+        # Map thuộc tính tìm kiếm với tên cột trong database
+        column_map = {
+            "Tên": "name",
+            "Email": "email",
+            "Số điện thoại": "phonenumber",
+            "Username": "username",
+            "Chức vụ": "emp_role"
+        }
+        
+        # Ẩn tất cả các hàng trước
+        for row in range(self.employee_table.rowCount()):
+            self.employee_table.setRowHidden(row, True)
+        
+        # Hiển thị các hàng phù hợp với tìm kiếm
+        for row in range(self.employee_table.rowCount()):
+            match = False
+            
+            if search_type == "Tất cả":
+                # Tìm kiếm trên tất cả các cột
+                for col in range(self.employee_table.columnCount()):
+                    item = self.employee_table.item(row, col)
+                    if item and search_text in item.text().lower():
+                        match = True
+                        break
+            else:
+                # Tìm kiếm trên cột cụ thể
+                col_name = column_map.get(search_type)
+                if col_name:
+                    # Tìm index của cột
+                    for col in range(self.employee_table.columnCount()):
+                        header = self.employee_table.horizontalHeaderItem(col)
+                        if header and header.text().lower() == col_name:
+                            item = self.employee_table.item(row, col)
+                            if item and search_text in item.text().lower():
+                                match = True
+                            break
+            
+            if match:
+                self.employee_table.setRowHidden(row, False)
+    
+    def search_products(self):
+        """Tìm kiếm sản phẩm theo từ khóa và thuộc tính đã chọn"""
+        search_text = self.product_search_input.text().strip().lower()
+        search_type = self.product_search_combo.currentText()
+        
+        # Nếu không có từ khóa, hiển thị tất cả
+        if not search_text:
+            self.load_product_data()
+            return
+        
+        # Map thuộc tính tìm kiếm với tên cột trong database
+        column_map = {
+            "Tên sản phẩm": "name",
+            "ID": "id",
+            "Danh mục": "categoryid",
+            "Thương hiệu": "brandid"
+        }
+        
+        # Ẩn tất cả các hàng trước
+        for row in range(self.product_table.rowCount()):
+            self.product_table.setRowHidden(row, True)
+        
+        # Hiển thị các hàng phù hợp với tìm kiếm
+        for row in range(self.product_table.rowCount()):
+            match = False
+            
+            if search_type == "Tất cả":
+                # Tìm kiếm trên tất cả các cột
+                for col in range(self.product_table.columnCount()):
+                    item = self.product_table.item(row, col)
+                    if item and search_text in item.text().lower():
+                        match = True
+                        break
+            else:
+                # Tìm kiếm trên cột cụ thể
+                col_name = column_map.get(search_type)
+                if col_name:
+                    # Tìm index của cột
+                    for col in range(self.product_table.columnCount()):
+                        header = self.product_table.horizontalHeaderItem(col)
+                        if header and header.text().lower() == col_name:
+                            item = self.product_table.item(row, col)
+                            if item and search_text in item.text().lower():
+                                match = True
+                            break
+            
+            if match:
+                self.product_table.setRowHidden(row, False)
