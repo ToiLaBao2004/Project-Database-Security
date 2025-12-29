@@ -298,21 +298,22 @@ class AddProductDialog(QDialog):
         images_dir = os.path.join(os.path.dirname(__file__), '..', 'images')
         os.makedirs(images_dir, exist_ok=True)
         
-        # Get product name for filename
-        product_name = self.input_fields["name"].text().strip()
-        if not product_name:
-            return
+        # Lấy tên file gốc (chỉ filename, ví dụ: image.png)
+        filename = os.path.basename(self.image_path)
         
-        # Get file extension
-        _, ext = os.path.splitext(self.image_path)
-        
-        # Create filename: product_name + ext
-        filename = f"{product_name}{ext}"
+        # Tùy chọn: Tránh overwrite bằng cách thêm timestamp nếu file đã tồn tại
+        base, ext = os.path.splitext(filename)
+        counter = 1
         dest_path = os.path.join(images_dir, filename)
+        while os.path.exists(dest_path):
+            new_filename = f"{base}_{counter}{ext}"
+            dest_path = os.path.join(images_dir, new_filename)
+            filename = new_filename
+            counter += 1
         
         try:
             shutil.copy2(self.image_path, dest_path)
-            # Update image_path to the new filename (relative)
+            # Update image_path chỉ còn filename (không full path)
             self.image_path = filename
         except Exception as e:
             QMessageBox.warning(self, "Lỗi Lưu Ảnh", f"Không thể lưu hình ảnh: {str(e)}")
@@ -367,7 +368,7 @@ class AddProductDialog(QDialog):
             product = ProductModel(
                 id=0,  # Will be set by sequence
                 name=product_data["name"],
-                image=product_data["image"],
+                image=product_data["image"],  # Bây giờ chỉ là filename, ví dụ: "image.png"
                 unit_price=int(float(product_data["unitPrice"].replace(",", ""))),
                 stock_quantity=int(product_data["stockQuantity"]),
                 category_id=int(product_data["categoryId"]),

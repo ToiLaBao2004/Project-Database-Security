@@ -282,12 +282,12 @@ class ProductDetailDialog(QDialog):
         """Load initial image from product_data['IMAGE'] if available"""
         image_key = self.product_data.get('IMAGE', None)
         if image_key and image_key != 'N/A':
-            # Compute absolute path to images folder relative to script location
-            # Assuming script is in UI/Dialog/, images is in UI/images/
             script_dir = os.path.dirname(os.path.abspath(__file__))
-            images_dir = os.path.join(script_dir, '..', 'images')
+            #lùi về 1 thư mục để đến thư mục gốc
+            script_dir = os.path.dirname(script_dir)
+            images_dir = os.path.join(script_dir, 'images')
             image_path = os.path.join(images_dir, image_key)
-            
+            print(image_path);
             # Check if file exists
             if os.path.exists(image_path):
                 pixmap = QPixmap(image_path)
