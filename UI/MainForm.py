@@ -12,6 +12,7 @@ from datetime import date, datetime
 try:
     from BAL.UserService import UserService
     from BAL.ProductService import ProductService
+    from BAL.OrderService import OrderService
     from UI.Dialog.EmployeeDialog import EmployeeDetailDialog
     from UI.Dialog.AddEmployeeDialog import AddEmployeeDialog
     from UI.Dialog.AddProductDialog import AddProductDialog
@@ -35,6 +36,7 @@ class MainForm(QWidget):
         # Khởi tạo service nếu import thành công
         self.userService = UserService(self.oracleExec) if UserService else None
         self.productService = ProductService(self.oracleExec) if ProductService else None
+        self.orderService = OrderService(self.oracleExec) if OrderService else None
         
         self.setWindowTitle(f"Main Form - {self.username}")
         self.setMinimumSize(1100, 650)            
@@ -313,12 +315,12 @@ class MainForm(QWidget):
         btn_layout.addWidget(btn_refresh)
         btn_layout.addStretch()
 
-        orders_table = QTableWidget()
-        orders_table.setColumnCount(6)
-        orders_table.setHorizontalHeaderLabels(["Mã ĐH", "Khách Hàng", "Ngày Tạo", "Tổng Tiền", "Trạng Thái", "Ghi Chú"])
-        orders_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        orders_table.setAlternatingRowColors(True)
-        orders_table.setStyleSheet("""
+        self.orders_table = QTableWidget()
+        self.orders_table.setColumnCount(6)
+        self.orders_table.setHorizontalHeaderLabels(["Mã ĐH", "Khách Hàng", "Ngày Tạo", "Tổng Tiền", "Trạng Thái", "Ghi Chú"])
+        self.orders_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.orders_table.setAlternatingRowColors(True)
+        self.orders_table.setStyleSheet("""
             QTableWidget {
                 background-color: white;
                 border: 1px solid #bdc3c7;
@@ -352,23 +354,25 @@ class MainForm(QWidget):
                 border: none;
             }
         """)
-        orders_table.setRowCount(0)
+        self.orders_table.setRowCount(0)
 
         note = QLabel("📝 Dữ liệu đơn hàng sẽ được load từ database khi tích hợp backend")
         note.setFont(QFont("Segoe UI", 10))
         note.setStyleSheet("color: #7f8c8d; padding: 10px;")
         note.setAlignment(Qt.AlignCenter)
 
-        btn_refresh.clicked.connect(lambda: QMessageBox.information(self, "Làm mới", "Chức năng load dữ liệu (TODO)"))
+        btn_refresh.clicked.connect(self.handle_load_orders)
 
         layout.addWidget(header)
         layout.addLayout(stats_layout)
         layout.addSpacing(20)
         layout.addLayout(btn_layout)
         layout.addSpacing(10)
-        layout.addWidget(orders_table)
+        layout.addWidget(self.orders_table)
         layout.addWidget(note)
-
+        
+        self.handle_load_orders()
+        
         return page
 
     def create_employee_page(self):
@@ -978,3 +982,26 @@ class MainForm(QWidget):
             
             if match:
                 self.product_table.setRowHidden(row, False)
+                
+    def handle_load_orders(self):
+        if not self.orderService:
+            self.orders_table.setRowCount(0)
+            return
+
+        orders = self.orderService.load_orders()
+        if not orders:
+            self.orders_table.setRowCount(0)
+            return
+        
+        column_headers = list(orders[0].keys())
+        self.orders_table.setColumnCount(len(column_headers))
+        self.orders_table.setHorizontalHeaderLabels(column_headers)
+
+        self.orders_table.setRowCount(len(orders))
+        
+        for row, order_dict in enumerate(orders):
+            for col, key in enumerate(column_headers):
+                data = order_dict.get(key, "")
+                item = QTableWidgetItem(str(data) if data is not None else "")
+                item.setTextAlignment(Qt.AlignCenter)
+                self.orders_table.setItem(row, col, item)
