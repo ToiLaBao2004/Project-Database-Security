@@ -61,8 +61,22 @@ class UserService:
         except DatabaseError as e:
             raise DatabaseError(f"Error LOCKED user {username} ",e)
         
+    def get_user_session(self):
+        sql = """SELECT
+            user AS USERNAME
+            FROM dual"""
+            
+        return self.oracleExec.fetch_one(sql,{})
+        
     def get_all_employee_info(self, keyword="", type_search=None):
         try:
+            
+            username=self.get_user_session()["username"]
+            print(username)
+            if "EMP" in username:
+                query="""SELECT * FROM APP_SERVICE.EMPLOYEES"""
+                return self.oracleExec.fetch_all(query,{})
+            
             if type_search is None:
                 query="""SELECT * FROM APP_SERVICE.EMPLOYEES e WHERE EXISTS (SELECT 1 FROM DBA_USERS u 
                                                                     WHERE u.username = upper(e.username) 

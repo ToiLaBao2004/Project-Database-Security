@@ -278,11 +278,13 @@ class EmployeeDetailDialog(QDialog):
                 border: none;
             }
         """)
+        
         audit_logs = []
-        try:
-            audit_logs = self.auditService.get_user_audit(self.employee_data["username"])
-        except Exception as e:
-            QMessageBox.critical(self, "Lỗi audit", f"{str(e)}")
+        if "MGR" in self.employee_data["username"].upper():
+            try:
+                audit_logs = self.auditService.get_user_audit(self.employee_data["username"])
+            except Exception as e:
+                QMessageBox.critical(self, "Lỗi audit", f"{str(e)}")
 
         audit_table.setRowCount(len(audit_logs))
         
