@@ -72,7 +72,6 @@ class UserService:
         try:
             
             username=self.get_user_session()["username"]
-            print(username)
             if "EMP" in username:
                 query="""SELECT * FROM APP_SERVICE.EMPLOYEES"""
                 return self.oracleExec.fetch_all(query,{})
