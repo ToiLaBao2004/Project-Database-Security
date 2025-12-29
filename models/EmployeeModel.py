@@ -1,8 +1,8 @@
 from pydantic import BaseModel
 from datetime import date
-
+from typing import Optional
 class EmployeeModel(BaseModel):
-    id: int
+    id: Optional[int]=None
     name: str
     dateofbirth: date
     gender: str
@@ -10,4 +10,5 @@ class EmployeeModel(BaseModel):
     phonenumber:str
     email: str
     username: str
+    password: str
     emp_role: str

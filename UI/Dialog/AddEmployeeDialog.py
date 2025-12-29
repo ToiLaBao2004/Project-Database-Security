@@ -7,7 +7,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 from BAL.UserService import UserService
 from models.EmployeeModel import EmployeeModel
-
+import datetime
 class AddEmployeeDialog(QDialog):
     def __init__(self, oracleExec, parent=None):
         super().__init__(parent)
@@ -204,7 +204,7 @@ class AddEmployeeDialog(QDialog):
         try:
             employee = EmployeeModel(
                 name=data["name"],
-                dateofbirth=data["dob"],
+                dateofbirth= datetime.datetime.strptime(data["dob"],"%Y-%m-%d").date(),
                 gender=data["gender"],
                 address=data["address"],
                 phonenumber=data["phone_number"],
