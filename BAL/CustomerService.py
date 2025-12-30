@@ -1,6 +1,7 @@
 from oracledb import DatabaseError
 from BAL.OracleExec import OracleExec
 from models.CustomerModel import CustomerModel
+
 class CustomerService:
     def __init__(self, oracleExec: OracleExec):
         self.oracleExec=oracleExec
@@ -21,13 +22,18 @@ class CustomerService:
         except DatabaseError as e:
             raise ValueError("Can not get customers info ",e)
         
-    def get_customer_by_phone(self,phonenumber: str) -> dict|None:
+    def get_customer_by_phone(self,phonenumber: str, username: str) -> dict|None:
+        
+        if "emp" in username.lower():
+            self.set_context(phonenumber)
+        
         try:
             query="""SELECT * FROM APP_SERVICE.CUSTOMERS WHERE phoneNumber = :phonenumber"""
             
             return self.oracleExec.fetch_one(query,{"phonenumber":phonenumber})
         except DatabaseError as e:
             raise ValueError("Can not get customer info ",e)
+        
         
     def create_customer(self, customer: CustomerModel):
         
@@ -53,5 +59,6 @@ class CustomerService:
             
         except Exception as e:
             raise ValueError(f"Can't set context for phone number: {phone_number}", e)
+ 
         
     

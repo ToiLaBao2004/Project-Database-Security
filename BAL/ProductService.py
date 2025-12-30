@@ -86,14 +86,24 @@ class ProductService:
         except DatabaseError as e:
             raise DatabaseError (f"Error deactivating product ID {product_id} ",e)
         
-    def get_product_for_order(self, keyword=""):
+    def get_product_for_order(self, keyword : str=""):
         try:
-            query=f"""SELECT id,
-                            name,
-                            unitPrice,
-                            stockQuantity
-                            FROM APP_SERVICE.PRODUCTS WHERE LOWER(name) LIKE :keyword order BY id"""
-            return self.oracleExec.fetch_all(query,{"keyword":f"%{keyword.lower()}%"})
+            if keyword:
+                
+                query=f"""SELECT id,
+                                name,
+                                unitPrice,
+                                stockQuantity
+                                FROM APP_SERVICE.PRODUCTS WHERE LOWER(name) LIKE :keyword order BY id"""
+                return self.oracleExec.fetch_all(query,{"keyword":f"%{keyword.lower()}%"})
+            
+            else:
+                query=f"""SELECT id,
+                                name,
+                                unitPrice,
+                                stockQuantity
+                                FROM APP_SERVICE.PRODUCTS order BY id"""
+                
+                return self.oracleExec.fetch_all(query,{})
         except DatabaseError as e:
             raise ValueError("Cannot get product info" ,e)
-        
