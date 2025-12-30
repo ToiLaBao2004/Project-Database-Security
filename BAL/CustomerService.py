@@ -5,11 +5,19 @@ class CustomerService:
     def __init__(self, oracleExec: OracleExec):
         self.oracleExec=oracleExec
         
-    def get_all_customers(self) -> list:
+    def get_all_customers(self, keyword=None, search_type=None) -> list:
         try:
-            query="""SELECT * FROM APP_SERVICE.CUSTOMERS ORDER BY id"""
+            if search_type is None:
+                query="""SELECT id, name, phoneNumber FROM APP_SERVICE.CUSTOMERS ORDER BY id"""
+                
+                return self.oracleExec.fetch_all(query,{})
+            else:
+                query=f"""SELECT id, name, phoneNumber FROM APP_SERVICE.CUSTOMERS
+                                                WHERE {search_type} LIKE :keyword
+                                                ORDER BY id"""
             
-            return self.oracleExec.fetch_all(query)
+                return self.oracleExec.fetch_all(query,{"keyword":f"%{keyword}%"})
+        
         except DatabaseError as e:
             raise ValueError("Can not get customers info ",e)
         
