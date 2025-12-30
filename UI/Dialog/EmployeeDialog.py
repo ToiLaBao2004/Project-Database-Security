@@ -280,7 +280,8 @@ class EmployeeDetailDialog(QDialog):
         """)
         
         audit_logs = []
-        if "MGR" in self.employee_data["username"].upper():
+        current_user=self.userService.get_user_session()["username"]
+        if "MGR" in current_user:
             try:
                 audit_logs = self.auditService.get_user_audit(self.employee_data["username"])
             except Exception as e:
