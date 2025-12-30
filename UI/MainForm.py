@@ -1172,7 +1172,6 @@ class MainForm(QWidget):
         try:
             customers = self.customerService.get_all_customers()
             
-            # Nếu có keyword, lọc dữ liệu
             if keyword:
                 search_type = self.customer_search_combo.currentText()
                 filtered_customers = []
@@ -1180,14 +1179,10 @@ class MainForm(QWidget):
                 for customer in customers:
                     if search_type == "Tất cả":
                         if (keyword.lower() in str(customer.get('name', '')).lower() or
-                            keyword.lower() in str(customer.get('email', '')).lower() or
                             keyword in str(customer.get('phonenumber', ''))):
                             filtered_customers.append(customer)
                     elif search_type == "Tên":
                         if keyword.lower() in str(customer.get('name', '')).lower():
-                            filtered_customers.append(customer)
-                    elif search_type == "Email":
-                        if keyword.lower() in str(customer.get('email', '')).lower():
                             filtered_customers.append(customer)
                     elif search_type == "Số điện thoại":
                         if keyword in str(customer.get('phonenumber', '')):
@@ -1200,8 +1195,7 @@ class MainForm(QWidget):
             if not customers:
                 return
             
-            # Tạo column headers theo thứ tự mong muốn
-            column_headers = ["id", "name", "phonenumber", "email", "dateofbirth", "gender"]
+            column_headers = ["id", "name", "phonenumber"]
             
             self.customer_table.setColumnCount(len(column_headers))
             self.customer_table.setHorizontalHeaderLabels(column_headers)
@@ -1212,12 +1206,8 @@ class MainForm(QWidget):
                 for col, key in enumerate(column_headers):
                     data = customer_dict.get(key, "")
                     
-                    if isinstance(data, (date, datetime)):
-                        display_text = data.strftime('%Y-%m-%d')
-                    elif data is None:
+                    if data is None:
                         display_text = ""
-                    elif key == 'gender':
-                        display_text = "Nam" if data else "Nữ"
                     else:
                         display_text = str(data)
                     
