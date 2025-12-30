@@ -1325,8 +1325,6 @@ class MainForm(QWidget):
         if dialog.exec():
             new_employee = dialog.get_employee_data()
             if new_employee:
-                QMessageBox.information(self, "Thành Công",
-                    f"Đã thêm nhân viên: {new_employee.get('name', 'N/A')}\n")
                 self.load_employee_data()
                 
     def delete_employee(self):
@@ -1357,8 +1355,6 @@ class MainForm(QWidget):
         if dialog.exec():
             new_product = dialog.get_product_data()
             if new_product:
-                QMessageBox.information(self, "Thành Công",
-                    f"Đã thêm sản phẩm: {new_product.get('name', 'N/A')}")
                 self.load_product_data()
 
     def show_product_detail(self, row, col):
@@ -1665,7 +1661,7 @@ class MainForm(QWidget):
             
                 employee=self.userService.get_user()
                 
-                order=OrderModel(cus_id=cus_id,
+                order=OrderModel(cus_id=cus_id[0],
                                  emp_id=employee["id"],
                                  order_date_time=datetime.now())
                 
