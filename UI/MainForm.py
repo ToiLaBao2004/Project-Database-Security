@@ -1395,7 +1395,6 @@ class MainForm(QWidget):
         if reply == QMessageBox.Yes:
             try:
                 self.productService.deactivate_product(product_id)
-                QMessageBox.information(self, "Thành Công", f"Đã xóa sản phẩm ID {product_id}.")
                 self.load_product_data()
             except Exception as e:
                 QMessageBox.critical(self, "Lỗi", f"Lỗi khi xóa sản phẩm: {str(e)}")
