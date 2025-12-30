@@ -970,6 +970,9 @@ class MainForm(QWidget):
         return card
 
     def load_employee_data(self, keyword=None, type_search=None):
+        
+        if type_search is None:
+            self.employee_search_input.clear()
             
         employees = self.userService.get_all_employee_info(keyword=keyword, type_search=type_search)
         
@@ -1000,14 +1003,14 @@ class MainForm(QWidget):
                 item.setTextAlignment(Qt.AlignCenter)
                 self.employee_table.setItem(row, col, item)
 
-    def load_product_data(self):
-        if not self.productService:
-            self.product_table.setRowCount(0)
-            return
-
-        products = self.productService.get_all_products()
+    def load_product_data(self, keyword=None, type_search=None):
+        
+        if type_search is None:
+            self.product_search_input.clear()
+        
+        products = self.productService.get_all_products(keyword=keyword,type_search=type_search)
+        self.product_table.setRowCount(0)
         if not products:
-            self.product_table.setRowCount(0)
             return
         
         column_headers = list(products[0].keys())
@@ -1147,17 +1150,9 @@ class MainForm(QWidget):
         self.load_employee_data(keyword=keyword, type_search=type_search)
         
     def search_products(self):
-        """Tìm kiếm sản phẩm theo từ khóa và thuộc tính đã chọn"""
-        search_text = self.product_search_input.text().strip().lower()
+        keyword = self.product_search_input.text().strip().lower()
         search_type = self.product_search_combo.currentText()
         
-        # Nếu không có từ khóa, hiển thị tất cả các hàng
-        if not search_text:
-            for row in range(self.product_table.rowCount()):
-                self.product_table.setRowHidden(row, False)
-            return
-        
-        # Map thuộc tính tìm kiếm với tên cột trong database
         column_map = {
             "Tên sản phẩm": "name",
             "ID": "id",
@@ -1165,50 +1160,18 @@ class MainForm(QWidget):
             "Thương hiệu": "brandid"
         }
         
-        # Ẩn tất cả các hàng trước
-        for row in range(self.product_table.rowCount()):
-            self.product_table.setRowHidden(row, True)
+        type_search = column_map.get(search_type) if search_type != "Tất cả" else None
         
-        # Hiển thị các hàng phù hợp với tìm kiếm
-        for row in range(self.product_table.rowCount()):
-            match = False
-            
-            if search_type == "Tất cả":
-                # Tìm kiếm trên tất cả các cột
-                for col in range(self.product_table.columnCount()):
-                    item = self.product_table.item(row, col)
-                    if item and search_text in item.text().lower():
-                        match = True
-                        break
-            else:
-                # Tìm kiếm trên cột cụ thể
-                col_name = column_map.get(search_type)
-                if col_name:
-                    # Tìm index của cột
-                    for col in range(self.product_table.columnCount()):
-                        header = self.product_table.horizontalHeaderItem(col)
-                        if header and header.text().lower() == col_name:
-                            item = self.product_table.item(row, col)
-                            if item and search_text in item.text().lower():
-                                match = True
-                            break
-            
-            if match:
-                self.product_table.setRowHidden(row, False)
+        self.load_product_data(keyword=keyword,type_search=type_search)
     
-    # =========================================================================
-    # ORDER / CART FUNCTIONS
-    # =========================================================================
-    def load_order_products(self):
-        """Load danh sách sản phẩm vào bảng order"""
-        if not self.productService:
-            self.order_product_table.setRowCount(0)
-            return
-
+    def load_order_products(self, keyword=""):
+        
         try:
-            products = self.productService.get_all_products()
+            products = self.productService.get_product_for_order(keyword)
+            
+            self.order_product_table.setRowCount(0)
+                
             if not products:
-                self.order_product_table.setRowCount(0)
                 return
             
             self.order_product_table.setRowCount(len(products))
@@ -1259,26 +1222,11 @@ class MainForm(QWidget):
     
     def search_order_products(self):
         """Tìm kiếm sản phẩm trong bảng order"""
-        search_text = self.order_product_search.text().strip().lower()
-        
-        if not search_text:
-            for row in range(self.order_product_table.rowCount()):
-                self.order_product_table.setRowHidden(row, False)
-            return
-        
-        for row in range(self.order_product_table.rowCount()):
-            match = False
-            for col in range(self.order_product_table.columnCount() - 1):  # Skip button column
-                item = self.order_product_table.item(row, col)
-                if item and search_text in item.text().lower():
-                    match = True
-                    break
-            self.order_product_table.setRowHidden(row, not match)
+        keyword = self.order_product_search.text().strip().lower()
+        self.load_order_products(keyword=keyword)
     
     def add_to_cart(self, row):
-        """Thêm sản phẩm vào giỏ hàng"""
         try:
-            # Get product info from table
             product_id = int(self.order_product_table.item(row, 0).text())
             product_name = self.order_product_table.item(row, 1).text()
             price_text = self.order_product_table.item(row, 2).text().replace(' đ', '').replace(',', '')
@@ -1289,7 +1237,6 @@ class MainForm(QWidget):
                 QMessageBox.warning(self, "Hết Hàng", f"Sản phẩm '{product_name}' đã hết hàng!")
                 return
             
-            # Check if product already in cart
             for item in self.cart_items:
                 if item['id'] == product_id:
                     if item['quantity'] < stock:
@@ -1301,7 +1248,6 @@ class MainForm(QWidget):
                                           f"Không thể thêm. Tồn kho chỉ còn {stock} sản phẩm!")
                         return
             
-            # Add new item to cart
             self.cart_items.append({
                 'id': product_id,
                 'name': product_name,
@@ -1316,7 +1262,6 @@ class MainForm(QWidget):
             QMessageBox.critical(self, "Lỗi", f"Không thể thêm vào giỏ hàng: {str(e)}")
     
     def update_cart_display(self):
-        """Cập nhật hiển thị giỏ hàng"""
         self.cart_table.setRowCount(len(self.cart_items))
         total = 0
         
