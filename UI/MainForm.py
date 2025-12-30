@@ -1431,7 +1431,7 @@ class MainForm(QWidget):
         
         self.load_product_data(keyword=keyword,type_search=type_search)
     
-    def load_order_products(self, keyword=""):
+    def load_order_products(self, keyword:str=""):
         
         try:
             products = self.productService.get_product_for_order(keyword)
@@ -1657,7 +1657,8 @@ class MainForm(QWidget):
             try:
                 customer_model=CustomerModel(name=customer_name,phonenumber=customer_phone)
                 
-                exists_customer=self.customerService.get_customer_by_phone(phonenumber=customer_phone)
+                exists_customer=self.customerService.get_customer_by_phone(phonenumber=customer_phone,
+                                                                           username=self.username)
                 if exists_customer is None:
                     cus_id=self.customerService.create_customer(customer_model)
                 else:
