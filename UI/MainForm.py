@@ -10,10 +10,14 @@ from datetime import date, datetime
 from BAL.UserService import UserService
 from BAL.ProductService import ProductService
 from BAL.OrderService import OrderService
+from BAL.CustomerService import CustomerService
 from UI.Dialog.EmployeeDialog import EmployeeDetailDialog
 from UI.Dialog.AddEmployeeDialog import AddEmployeeDialog
 from UI.Dialog.AddProductDialog import AddProductDialog
 from UI.Dialog.ProductDetailDialog import ProductDetailDialog
+from models.OrderModel import OrderModel
+from models.OrderDetailModel import OrderDetailModel
+from models.CustomerModel import CustomerModel
 
 class MainForm(QWidget):
     def __init__(self, oracleExec, username=None, parent=None):
@@ -22,10 +26,10 @@ class MainForm(QWidget):
         self.oracleExec = oracleExec
         self.username = username
         
-        # Khởi tạo service nếu import thành công
-        self.userService = UserService(self.oracleExec) if UserService else None
-        self.productService = ProductService(self.oracleExec) if ProductService else None
-        self.orderService = OrderService(self.oracleExec) if OrderService else None
+        self.userService = UserService(self.oracleExec) 
+        self.productService = ProductService(self.oracleExec)
+        self.customerService=CustomerService(self.oracleExec)
+        self.orderService = OrderService(self.oracleExec)
         
         self.setWindowTitle(f"Main Form - {self.username}")
         self.setMinimumSize(1100, 650)            
@@ -1372,7 +1376,6 @@ class MainForm(QWidget):
         
         total = sum(item['price'] * item['quantity'] for item in self.cart_items)
         
-        # Create order summary
         summary = "CHI TIẾT ĐƠN HÀNG:\n\n"
         summary += f"👤 Khách hàng: {customer_name}\n"
         summary += f"📱 Số điện thoại: {customer_phone}\n\n"
@@ -1389,43 +1392,48 @@ class MainForm(QWidget):
         
         if reply == QMessageBox.Yes:
             try:
-                # Save order to history
-                from datetime import datetime
-                order = {
-                    'order_id': len(self.order_history) + 1,
-                    'customer_name': customer_name,
-                    'customer_phone': customer_phone,
-                    'items': [item.copy() for item in self.cart_items],
-                    'total': total,
-                    'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                    'employee': self.username
-                }
-                self.order_history.append(order)
+                customer_model=CustomerModel(name=customer_name,phonenumber=customer_phone)
                 
-                # TODO: Gọi API lưu đơn hàng vào database
-                # self.orderService.create_order(order)
+                exists_customer=self.customerService.get_customer_by_phone(phonenumber=customer_phone)
+                if exists_customer is None:
+                    cus_id=self.customerService.create_customer(customer_model)
+                else:
+                    cus_id=exists_customer["id"]
+            
+                employee=self.userService.get_user()
+                
+                order=OrderModel(cus_id=cus_id,
+                                 emp_id=employee["id"],
+                                 order_date_time=datetime.now())
+                
+                order_id=self.orderService.create_order(order)
+                print(order_id)
+                for item in self.cart_items:
+                    order_detail=OrderDetailModel(order_id=order_id[0],
+                                                  product_id=item["id"],
+                                                  unit_price=item["price"],
+                                                  quantity=item["quantity"]
+                                                  )
+                    
+                    self.orderService.create_order_detail(order_detail)
                 
                 QMessageBox.information(self, "Thành Công", 
-                                      f"Đã tạo đơn hàng #{order['order_id']} thành công!\n"
+                                      f"Đã tạo đơn hàng #{order_id[0]} thành công!\n"
                                       f"Khách hàng: {customer_name}\n"
-                                      f"Tổng tiền: {total:,.0f} đ\n\n"
-                                      f"(Chức năng lưu vào database sẽ được thêm sau)")
+                                      f"Tổng tiền: {total:,.0f} đ\n\n")
                 
-                # Clear cart and customer info
                 self.cart_items.clear()
                 self.customer_name_input.clear()
                 self.customer_phone_input.clear()
                 self.update_cart_display()
             except Exception as e:
-                QMessageBox.critical(self, "Lỗi", f"Không thể tạo đơn hàng: {str(e)}")
+                QMessageBox.critical(self, "Lỗi", f"{str(e)}")
     
     def view_order_history(self):
-        """Xem lịch sử đơn hàng đã tạo"""
         if not self.orderService:
             QMessageBox.critical(self, "Lỗi", "OrderService chưa được khởi tạo!")
             return
         
-        # Open OrderHistoryDialog with OrderService
         from UI.Dialog.OrderHistoryDialog import OrderHistoryDialog
         dialog = OrderHistoryDialog(self.orderService, self)
         dialog.exec()

@@ -56,19 +56,20 @@ class OrderService:
             raise ValueError(f"Can't get order detail of {order_id}")
         
     def create_order(self, order: OrderModel):
-        query="""INSERT INTO APP_SERVICE.ORDERS (id, cusid, empid, orderdatetime)
-                 VALUES (APP_SERVICE.seq_orders.NEXTVAL, :cusid, :empid, :orderdatetime)"""
+        query="""INSERT INTO APP_SERVICE.ORDERS (id, cusId, empId, orderDateTime)
+                 VALUES (APP_SERVICE.seq_orders.NEXTVAL, :cusid, :empid, :orderdatetime)
+                 RETURNING id INTO :id"""
         try:
-            self.oracleExec.execute(query,{
+            return self.oracleExec.execute_with_returning(query, {
                 "cusid": order.cus_id,
                 "empid": order.emp_id,
                 "orderdatetime": order.order_date_time
             })
         except DatabaseError as e:
-            raise DatabaseError(f"Error creating order {order.id}: {e}")
+            raise DatabaseError(f"Error creating order: {e}")
         
     def create_order_detail(self, order_detail: OrderDetailModel):
-        query="""INSERT INTO APP_SERVICE.ORDERDETAILS (id, orderid, productid, unitprice, quantity)
+        query="""INSERT INTO APP_SERVICE.ORDERDETAILS (id, orderId, productId, unitPrice, quantity)
                  VALUES (APP_SERVICE.seq_orderdetails.NEXTVAL, :orderid, :productid, :unitprice, :quantity)"""
         try:
             self.oracleExec.execute(query,{
@@ -78,4 +79,4 @@ class OrderService:
                 "quantity": order_detail.quantity
             })
         except DatabaseError as e:
-            raise DatabaseError(f"Error creating order detail {order_detail.id}: {e}")
+            raise DatabaseError(f"Error creating order detail order_detail: {e}")
