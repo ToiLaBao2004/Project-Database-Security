@@ -6,7 +6,7 @@ from oracledb import DatabaseError
 class OrderService:
     def __init__(self, oracleExec: OracleExec):
         self.oracleExec = oracleExec
-
+        
     def load_orders(self, keyword="", type_search=None):
         try:
             base_query = """SELECT 
@@ -78,5 +78,21 @@ class OrderService:
                 "unitprice": order_detail.unit_price,
                 "quantity": order_detail.quantity
             })
+            
+            self.buy_product(id=order_detail.product_id, quantity=order_detail.quantity)
+            
         except DatabaseError as e:
             raise DatabaseError(f"Error creating order detail order_detail: {e}")
+        
+        
+    def buy_product(self, id, quantity):
+        try:
+            query = """UPDATE APP_SERVICE.PRODUCTS 
+                       SET stockQuantity = stockQuantity - :quantity 
+                       WHERE id = :id"""
+            
+            rows_updated = self.oracleExec.execute(query, {"quantity": quantity, "id": id})
+            print(rows_updated)
+            
+        except Exception as e:
+            raise ValueError(f"Cannot update stock quantity of product {id}: {e}")

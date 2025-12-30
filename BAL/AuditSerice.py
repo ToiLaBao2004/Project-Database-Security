@@ -16,8 +16,8 @@ class AuditService:
                     FROM unified_audit_trail 
                     WHERE object_schema = 'APP_SERVICE'
                     AND object_name IN ('ORDERS', 'ORDERDETAILS') 
-                    AND dbusername = '{username.upper()}
-                    ORDER BY event_timestamp DESC'"""
+                    AND dbusername = '{username.upper()}'
+                    ORDER BY event_timestamp DESC"""
             
             return self.oracleExec.fetch_all(query, {})
         except Exception as e:

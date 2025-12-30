@@ -1660,7 +1660,7 @@ class MainForm(QWidget):
                 exists_customer=self.customerService.get_customer_by_phone(phonenumber=customer_phone,
                                                                            username=self.username)
                 if exists_customer is None:
-                    cus_id=self.customerService.create_customer(customer_model)
+                    cus_id=self.customerService.create_customer(customer_model)[0]
                 else:
                     cus_id=exists_customer["id"]
             
@@ -1671,7 +1671,6 @@ class MainForm(QWidget):
                                  order_date_time=datetime.now())
                 
                 order_id=self.orderService.create_order(order)
-                print(order_id)
                 for item in self.cart_items:
                     order_detail=OrderDetailModel(order_id=order_id[0],
                                                   product_id=item["id"],
