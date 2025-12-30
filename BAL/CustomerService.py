@@ -40,3 +40,15 @@ class CustomerService:
                                            "phonenumber":customer.phonenumber})
         except DatabaseError as e:
             raise ValueError(f"Can't insert customer with phone number: {customer.phonenumber} ", e)
+        
+    def set_context(self, phone_number: str):
+        try:
+            query = """EXEC sec_mgr.fgac_ctx_pkg.set_phonenumber(:phone_number)"""
+            
+            self.oracleExec.execute(query,{"phone_number":phone_number})
+            
+            query = """SELECT id, name, phoneNumber FROM APP_SERVICE.CUSTOMERS WHERE phonenumber = :phone_number"""
+            
+            self.oracleExec.fetch_one(query,{"phone_number":phone_number})
+        except DatabaseError as e:
+            raise ValueError(f"Can't set context for phone number: {phone_number} ", e)

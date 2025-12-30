@@ -1224,6 +1224,27 @@ class MainForm(QWidget):
         
         if keyword:
             self.load_customer_data(keyword=keyword, type_search=search_type)
+        elif self.customer_search_combo.currentText() == "Số điện thoại":
+            if  "emp" in self.username.lower():
+                customers = self.customerService.set_context(self.customer_search_input.text())
+                column_headers = ["id", "name", "phonenumber"]
+                self.customer_table.setColumnCount(len(column_headers))
+                self.customer_table.setHorizontalHeaderLabels(column_headers)
+            
+                self.customer_table.setRowCount(len(customers))
+                
+                for row, customer_dict in enumerate(customers):
+                    for col, key in enumerate(column_headers):
+                        data = customer_dict.get(key, "")
+                        
+                        if data is None:
+                            display_text = ""
+                        else:
+                            display_text = str(data)
+                        
+                        item = QTableWidgetItem(display_text)
+                        item.setTextAlignment(Qt.AlignCenter)
+                        self.customer_table.setItem(row, col, item)
         else:
             self.load_customer_data()
     
@@ -1315,15 +1336,6 @@ class MainForm(QWidget):
         layout.addWidget(btn_close, alignment=Qt.AlignRight)
         
         detail_dialog.exec()
-    
-    def open_customer_dialog(self):
-        """Mở dialog quản lý khách hàng"""
-        try:
-            from UI.Dialog.CustomerDialog import CustomerDialog
-            dialog = CustomerDialog(self.oracleExec, self)
-            dialog.exec()
-        except Exception as e:
-            QMessageBox.critical(self, "Lỗi", f"Không thể mở quản lý khách hàng:\n{str(e)}")
                 
     def handle_logout(self):
         reply = QMessageBox.question(self, "Đăng Xuất", "Bạn có chắc chắn muốn đăng xuất?",
