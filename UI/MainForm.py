@@ -1358,7 +1358,7 @@ class MainForm(QWidget):
             new_product = dialog.get_product_data()
             if new_product:
                 QMessageBox.information(self, "Thành Công",
-                    f"Đã thêm sản phẩm: {new_product.get('name', 'N/A')}\n(Chức năng lưu vào database sẽ được thêm sau)")
+                    f"Đã thêm sản phẩm: {new_product.get('name', 'N/A')}")
                 self.load_product_data()
 
     def show_product_detail(self, row, col):
