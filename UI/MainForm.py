@@ -1421,11 +1421,11 @@ class MainForm(QWidget):
     
     def view_order_history(self):
         """Xem lịch sử đơn hàng đã tạo"""
-        if not self.order_history:
-            QMessageBox.information(self, "Lịch Sử Đơn Hàng", "Chưa có đơn hàng nào được tạo!")
+        if not self.orderService:
+            QMessageBox.critical(self, "Lỗi", "OrderService chưa được khởi tạo!")
             return
         
-        # Open OrderHistoryDialog
+        # Open OrderHistoryDialog with OrderService
         from UI.Dialog.OrderHistoryDialog import OrderHistoryDialog
-        dialog = OrderHistoryDialog(self.order_history, self)
+        dialog = OrderHistoryDialog(self.orderService, self)
         dialog.exec()
