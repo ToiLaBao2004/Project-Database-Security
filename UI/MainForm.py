@@ -70,14 +70,11 @@ class MainForm(QWidget):
         # Menu buttons based on role
         self.btn_employees = QPushButton("👥 Quản Lý Nhân Viên")
         self.btn_products = QPushButton("📋 Quản Lý Sản Phẩm")
-        
-        
-        self.btn_profile = QPushButton("👤 Thông Tin Cá Nhân")
-        self.btn_activity = QPushButton("📊 Hoạt Động Của Tôi")
         self.btn_orders = QPushButton("📦 Đơn Hàng")
+        self.btn_customers = QPushButton("👤 Quản Lý Khách Hàng")
         
         self.btn_logout = QPushButton("🚪 Đăng Xuất")
-        menu_buttons = [self.btn_employees, self.btn_products, self.btn_profile, self.btn_activity, self.btn_orders, self.btn_logout]
+        menu_buttons = [self.btn_employees, self.btn_products, self.btn_orders, self.btn_customers, self.btn_logout]
 
         # Style menu buttons
         menu_style = """
@@ -108,9 +105,8 @@ class MainForm(QWidget):
         # Connect buttons
         self.btn_employees.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(0))
         self.btn_products.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(1))
-        self.btn_profile.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(2))
-        self.btn_activity.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(3))
-        self.btn_orders.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(4))
+        self.btn_orders.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(2))
+        self.btn_customers.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(3))
         self.btn_logout.clicked.connect(self.handle_logout)
 
         sidebar_layout.addWidget(header)
@@ -128,15 +124,12 @@ class MainForm(QWidget):
             
         product_page = self.create_product_page()
         self.stacked_widget.addWidget(product_page)
-
-        profile_page = self.create_profile_page()
-        self.stacked_widget.addWidget(profile_page)
-            
-        activity_page = self.create_activity_page()
-        self.stacked_widget.addWidget(activity_page)
             
         orders_page = self.create_orders_page()
         self.stacked_widget.addWidget(orders_page)
+        
+        customer_page = self.create_customer_page()
+        self.stacked_widget.addWidget(customer_page)
 
         main_layout.addWidget(sidebar)
         main_layout.addWidget(self.stacked_widget)
@@ -607,6 +600,146 @@ class MainForm(QWidget):
         
         # Load products
         self.load_order_products()
+        
+        return page
+
+    def create_customer_page(self):
+        page = QWidget()
+        page.setStyleSheet("background-color: #ecf0f1;")
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(30, 30, 30, 30)
+
+        header = QLabel("👥 QUẢN LÝ KHÁCH HÀNG")
+        header.setFont(QFont("Segoe UI", 20, QFont.Bold))
+        header.setStyleSheet("color: #2c3e50; margin-bottom: 10px;")
+
+        # Search section
+        search_layout = QHBoxLayout()
+        search_layout.setSpacing(10)
+        
+        search_label = QLabel("🔍 Tìm kiếm:")
+        search_label.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        search_label.setStyleSheet("color: #2c3e50;")
+        
+        self.customer_search_combo = QComboBox()
+        self.customer_search_combo.addItems(["Tất cả", "Tên", "Email", "Số điện thoại"])
+        self.customer_search_combo.setFixedHeight(40)
+        self.customer_search_combo.setFixedWidth(180)
+        self.customer_search_combo.setStyleSheet("""
+            QComboBox {
+                background-color: white;
+                border: 2px solid #bdc3c7;
+                border-radius: 8px;
+                padding: 8px 12px;
+                font-size: 11px;
+                color: #2c3e50;
+            }
+            QComboBox:hover {
+                border: 2px solid #3498db;
+            }
+            QComboBox::drop-down {
+                border: none;
+                width: 30px;
+            }
+            QComboBox::down-arrow {
+                image: none;
+                border-left: 5px solid transparent;
+                border-right: 5px solid transparent;
+                border-top: 5px solid #2c3e50;
+                margin-right: 10px;
+            }
+            QComboBox QAbstractItemView {
+                color: black;
+                selection-background-color: #3498db;
+            }
+        """)
+        
+        self.customer_search_input = QLineEdit()
+        self.customer_search_input.setPlaceholderText("Nhập từ khóa tìm kiếm...")
+        self.customer_search_input.setFixedHeight(40)
+        self.customer_search_input.setStyleSheet("""
+            QLineEdit {
+                background-color: white;
+                border: 2px solid #bdc3c7;
+                border-radius: 8px;
+                padding: 8px 15px;
+                font-size: 11px;
+                color: #2c3e50;
+            }
+            QLineEdit:focus {
+                border: 2px solid #3498db;
+            }
+        """)
+        self.customer_search_input.textChanged.connect(self.search_customers)
+        
+        search_layout.addWidget(search_label)
+        search_layout.addWidget(self.customer_search_combo)
+        search_layout.addWidget(self.customer_search_input)
+        search_layout.addStretch()
+
+        btn_layout = QHBoxLayout()
+        btn_refresh = QPushButton("🔄 Làm Mới")
+        
+        btn_refresh.setStyleSheet("color: black; font-weight: bold;")
+        
+        btn_refresh.setFixedHeight(40)
+        btn_refresh.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        btn_refresh.setCursor(Qt.PointingHandCursor)
+        btn_layout.addWidget(btn_refresh)
+        
+        btn_layout.addStretch()
+
+        self.customer_table = QTableWidget()
+        self.customer_table.setColumnCount(6)
+        self.customer_table.setHorizontalHeaderLabels(["id", "name", "dateofbirth", "gender", "phonenumber", "email"])
+        self.customer_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.customer_table.setAlternatingRowColors(True)
+        self.customer_table.setStyleSheet("""
+            QTableWidget {
+                background-color: white;
+                border: 1px solid #bdc3c7;
+                border-radius: 5px;
+                gridline-color: #ecf0f1;
+                outline: none;
+            }
+            QHeaderView::section {
+                background-color: #34495e;
+                color: white;
+                padding: 10px;
+                border: none;
+                font-weight: bold;
+            }
+            QTableWidget::item {
+                padding: 8px;
+                color: #2c3e50;
+                border: none;
+                outline: none;
+            }
+            QTableWidget::item:selected {
+                background-color: #3498db;
+                color: white;
+            }
+            QTableWidget::item:focus {
+                outline: none;
+                border: none;
+            }
+            QTableCornerButton::section {
+                background-color: #34495e;
+                border: none;
+            }
+        """)
+
+        self.load_customer_data()
+
+        btn_refresh.clicked.connect(self.load_customer_data)
+        self.customer_table.cellClicked.connect(self.show_customer_detail)
+
+        layout.addWidget(header)
+        layout.addLayout(search_layout)
+        layout.addSpacing(10)
+        layout.addLayout(btn_layout)
+        layout.addSpacing(10)
+        layout.addWidget(self.customer_table)
 
         return page
 
@@ -1030,6 +1163,177 @@ class MainForm(QWidget):
                 item = QTableWidgetItem(str(data) if data is not None else "")
                 item.setTextAlignment(Qt.AlignCenter)
                 self.product_table.setItem(row, col, item)
+
+    def load_customer_data(self, keyword=None, type_search=None):
+        """Tải dữ liệu khách hàng"""
+        if type_search is None:
+            self.customer_search_input.clear()
+        
+        try:
+            customers = self.customerService.get_all_customers()
+            
+            # Nếu có keyword, lọc dữ liệu
+            if keyword:
+                search_type = self.customer_search_combo.currentText()
+                filtered_customers = []
+                
+                for customer in customers:
+                    if search_type == "Tất cả":
+                        if (keyword.lower() in str(customer.get('name', '')).lower() or
+                            keyword.lower() in str(customer.get('email', '')).lower() or
+                            keyword in str(customer.get('phone_number', ''))):
+                            filtered_customers.append(customer)
+                    elif search_type == "Tên":
+                        if keyword.lower() in str(customer.get('name', '')).lower():
+                            filtered_customers.append(customer)
+                    elif search_type == "Email":
+                        if keyword.lower() in str(customer.get('email', '')).lower():
+                            filtered_customers.append(customer)
+                    elif search_type == "Số điện thoại":
+                        if keyword in str(customer.get('phone_number', '')):
+                            filtered_customers.append(customer)
+                
+                customers = filtered_customers
+            
+            self.customer_table.setRowCount(0)
+            
+            if not customers:
+                return
+            
+            # Tạo column headers theo thứ tự mong muốn
+            column_headers = ['id', 'name', 'date_of_birth', 'gender', 'phone_number', 'email']
+            
+            self.customer_table.setColumnCount(len(column_headers))
+            self.customer_table.setHorizontalHeaderLabels(column_headers)
+            
+            self.customer_table.setRowCount(len(customers))
+            
+            for row, customer_dict in enumerate(customers):
+                for col, key in enumerate(column_headers):
+                    data = customer_dict.get(key, "")
+                    
+                    if isinstance(data, (date, datetime)):
+                        display_text = data.strftime('%Y-%m-%d')
+                    elif data is None:
+                        display_text = ""
+                    elif key == 'gender':
+                        display_text = "Nam" if data else "Nữ"
+                    else:
+                        display_text = str(data)
+                    
+                    item = QTableWidgetItem(display_text)
+                    item.setTextAlignment(Qt.AlignCenter)
+                    self.customer_table.setItem(row, col, item)
+        except Exception as e:
+            QMessageBox.critical(self, "Lỗi", f"Không thể tải dữ liệu khách hàng:\n{str(e)}")
+    
+    def search_customers(self):
+        """Tìm kiếm khách hàng"""
+        keyword = self.customer_search_input.text().strip()
+        search_type = self.customer_search_combo.currentText()
+        
+        if keyword:
+            self.load_customer_data(keyword=keyword, type_search=search_type)
+        else:
+            self.load_customer_data()
+    
+    def show_customer_detail(self, row, col):
+        """Hiển thị chi tiết khách hàng"""
+        customer_data = {}
+        for col_idx in range(self.customer_table.columnCount()):
+            header = self.customer_table.horizontalHeaderItem(col_idx).text()
+            item = self.customer_table.item(row, col_idx)
+            customer_data[header] = item.text() if item else ""
+        
+        # Tạo dialog hiển thị chi tiết
+        detail_dialog = QDialog(self)
+        detail_dialog.setWindowTitle(f"Chi Tiết Khách Hàng #{customer_data.get('id', '')}")
+        detail_dialog.setMinimumSize(500, 400)
+        detail_dialog.setStyleSheet("background-color: #ecf0f1;")
+        
+        layout = QVBoxLayout(detail_dialog)
+        layout.setContentsMargins(25, 25, 25, 25)
+        layout.setSpacing(15)
+        
+        # Header
+        header = QLabel(f"👤 THÔNG TIN KHÁCH HÀNG #{customer_data.get('id', '')}")
+        header.setFont(QFont("Segoe UI", 16, QFont.Bold))
+        header.setStyleSheet("color: #2c3e50;")
+        layout.addWidget(header)
+        
+        # Info card
+        info_card = QFrame()
+        info_card.setStyleSheet("background-color: white; border-radius: 10px; padding: 20px; border: 2px solid #3498db;")
+        info_layout = QVBoxLayout(info_card)
+        
+        info_html = f"""
+        <table style='width: 100%; color: #2c3e50;'>
+            <tr>
+                <td style='padding: 10px; font-weight: bold; width: 40%;'>📝 Mã khách hàng:</td>
+                <td style='padding: 10px;'>#{customer_data.get('id', 'N/A')}</td>
+            </tr>
+            <tr style='background-color: #f8f9fa;'>
+                <td style='padding: 10px; font-weight: bold;'>👤 Tên khách hàng:</td>
+                <td style='padding: 10px;'>{customer_data.get('name', 'N/A')}</td>
+            </tr>
+            <tr>
+                <td style='padding: 10px; font-weight: bold;'>📞 Số điện thoại:</td>
+                <td style='padding: 10px;'>{customer_data.get('phone_number', 'N/A')}</td>
+            </tr>
+            <tr style='background-color: #f8f9fa;'>
+                <td style='padding: 10px; font-weight: bold;'>📧 Email:</td>
+                <td style='padding: 10px;'>{customer_data.get('email', 'N/A')}</td>
+            </tr>
+            <tr>
+                <td style='padding: 10px; font-weight: bold;'>🎂 Ngày sinh:</td>
+                <td style='padding: 10px;'>{customer_data.get('date_of_birth', 'N/A')}</td>
+            </tr>
+            <tr style='background-color: #f8f9fa;'>
+                <td style='padding: 10px; font-weight: bold;'>⚥ Giới tính:</td>
+                <td style='padding: 10px;'>{customer_data.get('gender', 'N/A')}</td>
+            </tr>
+        </table>
+        """
+        
+        info_label = QLabel(info_html)
+        info_label.setFont(QFont("Segoe UI", 10))
+        info_label.setStyleSheet("background: transparent; border: none;")
+        info_label.setTextFormat(Qt.RichText)
+        info_layout.addWidget(info_label)
+        
+        layout.addWidget(info_card)
+        layout.addStretch()
+        
+        # Close button
+        btn_close = QPushButton("Đóng")
+        btn_close.setFixedSize(100, 35)
+        btn_close.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        btn_close.setStyleSheet("""
+            QPushButton {
+                background-color: #95a5a6;
+                color: white;
+                border-radius: 5px;
+                border: none;
+            }
+            QPushButton:hover {
+                background-color: #7f8c8d;
+            }
+        """)
+        btn_close.setCursor(Qt.PointingHandCursor)
+        btn_close.clicked.connect(detail_dialog.reject)
+        
+        layout.addWidget(btn_close, alignment=Qt.AlignRight)
+        
+        detail_dialog.exec()
+    
+    def open_customer_dialog(self):
+        """Mở dialog quản lý khách hàng"""
+        try:
+            from UI.Dialog.CustomerDialog import CustomerDialog
+            dialog = CustomerDialog(self.oracleExec, self)
+            dialog.exec()
+        except Exception as e:
+            QMessageBox.critical(self, "Lỗi", f"Không thể mở quản lý khách hàng:\n{str(e)}")
                 
     def handle_logout(self):
         reply = QMessageBox.question(self, "Đăng Xuất", "Bạn có chắc chắn muốn đăng xuất?",
