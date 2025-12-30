@@ -53,3 +53,20 @@ class OracleExec:
             raise e
         finally:
             cursor.close()
+    
+    def execute_with_returning(self, query: str, params=None, returning_param: str = "id") -> int:
+        cursor = self.conn.cursor()
+        try:
+            returning_var = cursor.var(int)
+            if params is None:
+                params = {}
+            params[returning_param] = returning_var
+            
+            cursor.execute(query, params)
+            self.conn.commit()
+            return returning_var.getvalue()
+        except Exception as e:
+            self.conn.rollback()
+            raise e
+        finally:
+            cursor.close()

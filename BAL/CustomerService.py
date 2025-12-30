@@ -1,78 +1,26 @@
+from oracledb import DatabaseError
 from BAL.OracleExec import OracleExec
 from models.CustomerModel import CustomerModel
-from oracledb import DatabaseError
-
 class CustomerService:
     def __init__(self, oracleExec: OracleExec):
-        self.oracleExec = oracleExec
-
-    def get_all_customers(self):
-        """Lấy danh sách tất cả khách hàng"""
-        query = """SELECT id, name, phoneNumber, email, dateOfBirth, gender 
-                   FROM APP_SERVICE.CUSTOMERS 
-                   ORDER BY id DESC"""
+        self.oracleExec=oracleExec
+        
+    def get_customer_by_phone(self,phonenumber: str) -> dict|None:
         try:
-            result = self.oracleExec.execute(query, {})
-            customers = []
-            if result:
-                for row in result:
-                    customer = {
-                        'id': row[0],
-                        'name': row[1],
-                        'phone_number': row[2],
-                        'email': row[3],
-                        'date_of_birth': row[4],
-                        'gender': row[5]
-                    }
-                    customers.append(customer)
-            return customers
+            query="""SELECT * FROM APP_SERVICE.CUSTOMERS WHERE phoneNumber = :phonenumber"""
+            
+            return self.oracleExec.fetch_one(query,{"phonenumber":phonenumber})
         except DatabaseError as e:
-            raise DatabaseError(f"Error getting customers: {e}")
-
-    def search_customers(self, search_term):
-        """Tìm kiếm khách hàng theo tên, số điện thoại hoặc email"""
-        query = """SELECT id, name, phoneNumber, email, dateOfBirth, gender 
-                   FROM APP_SERVICE.CUSTOMERS 
-                   WHERE LOWER(name) LIKE LOWER(:search_term) 
-                   OR phoneNumber LIKE :search_term 
-                   OR LOWER(email) LIKE LOWER(:search_term)
-                   ORDER BY id DESC"""
+            raise ValueError("Can not get customer info ",e)
+        
+    def create_customer(self, customer: CustomerModel):
+        
         try:
-            search_pattern = f"%{search_term}%"
-            result = self.oracleExec.execute(query, {"search_term": search_pattern})
-            customers = []
-            if result:
-                for row in result:
-                    customer = {
-                        'id': row[0],
-                        'name': row[1],
-                        'phone_number': row[2],
-                        'email': row[3],
-                        'date_of_birth': row[4],
-                        'gender': row[5]
-                    }
-                    customers.append(customer)
-            return customers
+            query = """INSERT INTO APP_SERVICE.CUSTOMERS (id, name, phoneNumber) 
+                   VALUES (APP_SERVICE.seq_customers.NEXTVAL, :name, :phonenumber)
+                   RETURNING id INTO :id"""
+                        
+            return self.oracleExec.execute_with_returning(query,{"name":customer.name,
+                                           "phonenumber":customer.phonenumber})
         except DatabaseError as e:
-            raise DatabaseError(f"Error searching customers: {e}")
-
-    def get_customer_by_id(self, customer_id):
-        """Lấy thông tin chi tiết một khách hàng"""
-        query = """SELECT id, name, phoneNumber, email, dateOfBirth, gender 
-                   FROM APP_SERVICE.CUSTOMERS 
-                   WHERE id = :customer_id"""
-        try:
-            result = self.oracleExec.execute(query, {"customer_id": customer_id})
-            if result and len(result) > 0:
-                row = result[0]
-                return {
-                    'id': row[0],
-                    'name': row[1],
-                    'phone_number': row[2],
-                    'email': row[3],
-                    'date_of_birth': row[4],
-                    'gender': row[5]
-                }
-            return None
-        except DatabaseError as e:
-            raise DatabaseError(f"Error getting customer: {e}")
+            raise ValueError(f"Can't insert customer with phone number: {customer.phonenumber} ", e)
