@@ -969,14 +969,13 @@ class MainForm(QWidget):
 
         return card
 
-    def load_employee_data(self):
-        if not self.userService:
-            self.employee_table.setRowCount(0)
-            return
+    def load_employee_data(self, keyword=None, type_search=None):
             
-        employees = self.userService.get_all_employee_info()
+        employees = self.userService.get_all_employee_info(keyword=keyword, type_search=type_search)
+        
+        self.employee_table.setRowCount(0)
+        
         if not employees:
-            self.employee_table.setRowCount(0)
             return
         
         column_headers = list(employees[0].keys())
@@ -1132,17 +1131,9 @@ class MainForm(QWidget):
                 QMessageBox.critical(self, "Lỗi", f"Lỗi khi xóa sản phẩm: {str(e)}")
     
     def search_employees(self):
-        """Tìm kiếm nhân viên theo từ khóa và thuộc tính đã chọn"""
-        search_text = self.employee_search_input.text().strip().lower()
-        search_type = self.employee_search_combo.currentText()
+        keyword = self.employee_search_input.text().strip()
+        search_type_vn = self.employee_search_combo.currentText()
         
-        # Nếu không có từ khóa, hiển thị tất cả các hàng
-        if not search_text:
-            for row in range(self.employee_table.rowCount()):
-                self.employee_table.setRowHidden(row, False)
-            return
-        
-        # Map thuộc tính tìm kiếm với tên cột trong database
         column_map = {
             "Tên": "name",
             "Email": "email",
@@ -1151,37 +1142,10 @@ class MainForm(QWidget):
             "Chức vụ": "emp_role"
         }
         
-        # Ẩn tất cả các hàng trước
-        for row in range(self.employee_table.rowCount()):
-            self.employee_table.setRowHidden(row, True)
+        type_search = column_map.get(search_type_vn) if search_type_vn != "Tất cả" else None
         
-        # Hiển thị các hàng phù hợp với tìm kiếm
-        for row in range(self.employee_table.rowCount()):
-            match = False
-            
-            if search_type == "Tất cả":
-                # Tìm kiếm trên tất cả các cột
-                for col in range(self.employee_table.columnCount()):
-                    item = self.employee_table.item(row, col)
-                    if item and search_text in item.text().lower():
-                        match = True
-                        break
-            else:
-                # Tìm kiếm trên cột cụ thể
-                col_name = column_map.get(search_type)
-                if col_name:
-                    # Tìm index của cột
-                    for col in range(self.employee_table.columnCount()):
-                        header = self.employee_table.horizontalHeaderItem(col)
-                        if header and header.text().lower() == col_name:
-                            item = self.employee_table.item(row, col)
-                            if item and search_text in item.text().lower():
-                                match = True
-                            break
-            
-            if match:
-                self.employee_table.setRowHidden(row, False)
-    
+        self.load_employee_data(keyword=keyword, type_search=type_search)
+        
     def search_products(self):
         """Tìm kiếm sản phẩm theo từ khóa và thuộc tính đã chọn"""
         search_text = self.product_search_input.text().strip().lower()
