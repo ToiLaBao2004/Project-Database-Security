@@ -1,30 +1,19 @@
 from PySide6.QtWidgets import (
     QWidget, QLabel, QPushButton, QHBoxLayout, QVBoxLayout, QFrame,
     QMessageBox, QTableWidget, QTableWidgetItem, QHeaderView, QStackedWidget,
-    QGridLayout, QScrollArea, QLineEdit, QComboBox, QSpinBox
+    QLineEdit, QComboBox, QSpinBox, 
 )
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QColor
 from datetime import date, datetime
 
-# Giả định các file import này vẫn giữ nguyên như code cũ của bạn
-# Nếu chạy test độc lập mà thiếu file thì bạn comment tạm các dòng import BAL/UI này lại
-try:
-    from BAL.UserService import UserService
-    from BAL.ProductService import ProductService
-    from BAL.OrderService import OrderService
-    from UI.Dialog.EmployeeDialog import EmployeeDetailDialog
-    from UI.Dialog.AddEmployeeDialog import AddEmployeeDialog
-    from UI.Dialog.AddProductDialog import AddProductDialog
-    from UI.Dialog.ProductDetailDialog import ProductDetailDialog
-except ImportError:
-    # Dummy classes để code không crash nếu thiếu file
-    UserService = None
-    ProductService = None
-    EmployeeDetailDialog = None
-    AddEmployeeDialog = None
-    AddProductDialog = None
-    ProductDetailDialog = None
+from BAL.UserService import UserService
+from BAL.ProductService import ProductService
+from BAL.OrderService import OrderService
+from UI.Dialog.EmployeeDialog import EmployeeDetailDialog
+from UI.Dialog.AddEmployeeDialog import AddEmployeeDialog
+from UI.Dialog.AddProductDialog import AddProductDialog
+from UI.Dialog.ProductDetailDialog import ProductDetailDialog
 
 class MainForm(QWidget):
     def __init__(self, oracleExec, username=None, parent=None):
@@ -351,6 +340,7 @@ class MainForm(QWidget):
                 border-radius: 8px;
                 padding: 8px 12px;
                 font-size: 11px;
+                color: black;
             }
             QLineEdit:focus {
                 border: 2px solid #3498db;
@@ -454,6 +444,7 @@ class MainForm(QWidget):
                 border-radius: 6px;
                 padding: 5px 10px;
                 font-size: 11px;
+                color: black;
             }
             QLineEdit:focus {
                 border: 2px solid #3498db;
@@ -482,6 +473,7 @@ class MainForm(QWidget):
                 border-radius: 6px;
                 padding: 5px 10px;
                 font-size: 11px;
+                color: black;
             }
             QLineEdit:focus {
                 border: 2px solid #3498db;
@@ -659,6 +651,10 @@ class MainForm(QWidget):
                 border-top: 5px solid #2c3e50;
                 margin-right: 10px;
             }
+            QComboBox QAbstractItemView {
+                color: black;
+                selection-background-color: #3498db;
+            }
         """)
         
         self.employee_search_input = QLineEdit()
@@ -688,6 +684,10 @@ class MainForm(QWidget):
         btn_add = QPushButton("➕ Thêm Nhân Viên")
         btn_delete = QPushButton("🗑️ Xóa Nhân Viên")
         btn_refresh = QPushButton("🔄 Làm Mới")
+        
+        btn_add.setStyleSheet("color: black; font-weight: bold;")
+        btn_delete.setStyleSheet("color: black; font-weight: bold;")
+        btn_refresh.setStyleSheet("color: black; font-weight: bold;")
         
         for btn in [btn_add, btn_delete, btn_refresh]:
             btn.setFixedHeight(40)
@@ -798,6 +798,10 @@ class MainForm(QWidget):
                 border-top: 5px solid #2c3e50;
                 margin-right: 10px;
             }
+            QComboBox QAbstractItemView {
+                color: black;
+                selection-background-color: #3498db;
+            }
         """)
         
         self.product_search_input = QLineEdit()
@@ -827,6 +831,10 @@ class MainForm(QWidget):
         btn_add = QPushButton("➕ Thêm Sản Phẩm")
         btn_delete = QPushButton("🗑️ Xóa Sản Phẩm")
         btn_refresh = QPushButton("🔄 Làm Mới")
+        
+        btn_add.setStyleSheet("color: black; font-weight: bold;")
+        btn_delete.setStyleSheet("color: black; font-weight: bold;")
+        btn_refresh.setStyleSheet("color: black; font-weight: bold;")
         
         for btn in [btn_add, btn_delete, btn_refresh]:
             btn.setFixedHeight(40)
@@ -961,14 +969,16 @@ class MainForm(QWidget):
 
         return card
 
-    def load_employee_data(self):
-        if not self.userService:
-            self.employee_table.setRowCount(0)
-            return
+    def load_employee_data(self, keyword=None, type_search=None):
+        
+        if type_search is None:
+            self.employee_search_input.clear()
             
-        employees = self.userService.get_all_employee_info()
+        employees = self.userService.get_all_employee_info(keyword=keyword, type_search=type_search)
+        
+        self.employee_table.setRowCount(0)
+        
         if not employees:
-            self.employee_table.setRowCount(0)
             return
         
         column_headers = list(employees[0].keys())
@@ -993,14 +1003,14 @@ class MainForm(QWidget):
                 item.setTextAlignment(Qt.AlignCenter)
                 self.employee_table.setItem(row, col, item)
 
-    def load_product_data(self):
-        if not self.productService:
-            self.product_table.setRowCount(0)
-            return
-
-        products = self.productService.get_all_products()
+    def load_product_data(self, keyword=None, type_search=None):
+        
+        if type_search is None:
+            self.product_search_input.clear()
+        
+        products = self.productService.get_all_products(keyword=keyword,type_search=type_search)
+        self.product_table.setRowCount(0)
         if not products:
-            self.product_table.setRowCount(0)
             return
         
         column_headers = list(products[0].keys())
@@ -1124,17 +1134,9 @@ class MainForm(QWidget):
                 QMessageBox.critical(self, "Lỗi", f"Lỗi khi xóa sản phẩm: {str(e)}")
     
     def search_employees(self):
-        """Tìm kiếm nhân viên theo từ khóa và thuộc tính đã chọn"""
-        search_text = self.employee_search_input.text().strip().lower()
-        search_type = self.employee_search_combo.currentText()
+        keyword = self.employee_search_input.text().strip()
+        search_type_vn = self.employee_search_combo.currentText()
         
-        # Nếu không có từ khóa, hiển thị tất cả các hàng
-        if not search_text:
-            for row in range(self.employee_table.rowCount()):
-                self.employee_table.setRowHidden(row, False)
-            return
-        
-        # Map thuộc tính tìm kiếm với tên cột trong database
         column_map = {
             "Tên": "name",
             "Email": "email",
@@ -1143,49 +1145,14 @@ class MainForm(QWidget):
             "Chức vụ": "emp_role"
         }
         
-        # Ẩn tất cả các hàng trước
-        for row in range(self.employee_table.rowCount()):
-            self.employee_table.setRowHidden(row, True)
+        type_search = column_map.get(search_type_vn) if search_type_vn != "Tất cả" else None
         
-        # Hiển thị các hàng phù hợp với tìm kiếm
-        for row in range(self.employee_table.rowCount()):
-            match = False
-            
-            if search_type == "Tất cả":
-                # Tìm kiếm trên tất cả các cột
-                for col in range(self.employee_table.columnCount()):
-                    item = self.employee_table.item(row, col)
-                    if item and search_text in item.text().lower():
-                        match = True
-                        break
-            else:
-                # Tìm kiếm trên cột cụ thể
-                col_name = column_map.get(search_type)
-                if col_name:
-                    # Tìm index của cột
-                    for col in range(self.employee_table.columnCount()):
-                        header = self.employee_table.horizontalHeaderItem(col)
-                        if header and header.text().lower() == col_name:
-                            item = self.employee_table.item(row, col)
-                            if item and search_text in item.text().lower():
-                                match = True
-                            break
-            
-            if match:
-                self.employee_table.setRowHidden(row, False)
-    
+        self.load_employee_data(keyword=keyword, type_search=type_search)
+        
     def search_products(self):
-        """Tìm kiếm sản phẩm theo từ khóa và thuộc tính đã chọn"""
-        search_text = self.product_search_input.text().strip().lower()
+        keyword = self.product_search_input.text().strip().lower()
         search_type = self.product_search_combo.currentText()
         
-        # Nếu không có từ khóa, hiển thị tất cả các hàng
-        if not search_text:
-            for row in range(self.product_table.rowCount()):
-                self.product_table.setRowHidden(row, False)
-            return
-        
-        # Map thuộc tính tìm kiếm với tên cột trong database
         column_map = {
             "Tên sản phẩm": "name",
             "ID": "id",
@@ -1193,50 +1160,18 @@ class MainForm(QWidget):
             "Thương hiệu": "brandid"
         }
         
-        # Ẩn tất cả các hàng trước
-        for row in range(self.product_table.rowCount()):
-            self.product_table.setRowHidden(row, True)
+        type_search = column_map.get(search_type) if search_type != "Tất cả" else None
         
-        # Hiển thị các hàng phù hợp với tìm kiếm
-        for row in range(self.product_table.rowCount()):
-            match = False
-            
-            if search_type == "Tất cả":
-                # Tìm kiếm trên tất cả các cột
-                for col in range(self.product_table.columnCount()):
-                    item = self.product_table.item(row, col)
-                    if item and search_text in item.text().lower():
-                        match = True
-                        break
-            else:
-                # Tìm kiếm trên cột cụ thể
-                col_name = column_map.get(search_type)
-                if col_name:
-                    # Tìm index của cột
-                    for col in range(self.product_table.columnCount()):
-                        header = self.product_table.horizontalHeaderItem(col)
-                        if header and header.text().lower() == col_name:
-                            item = self.product_table.item(row, col)
-                            if item and search_text in item.text().lower():
-                                match = True
-                            break
-            
-            if match:
-                self.product_table.setRowHidden(row, False)
+        self.load_product_data(keyword=keyword,type_search=type_search)
     
-    # =========================================================================
-    # ORDER / CART FUNCTIONS
-    # =========================================================================
-    def load_order_products(self):
-        """Load danh sách sản phẩm vào bảng order"""
-        if not self.productService:
-            self.order_product_table.setRowCount(0)
-            return
-
+    def load_order_products(self, keyword=""):
+        
         try:
-            products = self.productService.get_all_products()
+            products = self.productService.get_product_for_order(keyword)
+            
+            self.order_product_table.setRowCount(0)
+                
             if not products:
-                self.order_product_table.setRowCount(0)
                 return
             
             self.order_product_table.setRowCount(len(products))
@@ -1287,26 +1222,11 @@ class MainForm(QWidget):
     
     def search_order_products(self):
         """Tìm kiếm sản phẩm trong bảng order"""
-        search_text = self.order_product_search.text().strip().lower()
-        
-        if not search_text:
-            for row in range(self.order_product_table.rowCount()):
-                self.order_product_table.setRowHidden(row, False)
-            return
-        
-        for row in range(self.order_product_table.rowCount()):
-            match = False
-            for col in range(self.order_product_table.columnCount() - 1):  # Skip button column
-                item = self.order_product_table.item(row, col)
-                if item and search_text in item.text().lower():
-                    match = True
-                    break
-            self.order_product_table.setRowHidden(row, not match)
+        keyword = self.order_product_search.text().strip().lower()
+        self.load_order_products(keyword=keyword)
     
     def add_to_cart(self, row):
-        """Thêm sản phẩm vào giỏ hàng"""
         try:
-            # Get product info from table
             product_id = int(self.order_product_table.item(row, 0).text())
             product_name = self.order_product_table.item(row, 1).text()
             price_text = self.order_product_table.item(row, 2).text().replace(' đ', '').replace(',', '')
@@ -1317,7 +1237,6 @@ class MainForm(QWidget):
                 QMessageBox.warning(self, "Hết Hàng", f"Sản phẩm '{product_name}' đã hết hàng!")
                 return
             
-            # Check if product already in cart
             for item in self.cart_items:
                 if item['id'] == product_id:
                     if item['quantity'] < stock:
@@ -1329,7 +1248,6 @@ class MainForm(QWidget):
                                           f"Không thể thêm. Tồn kho chỉ còn {stock} sản phẩm!")
                         return
             
-            # Add new item to cart
             self.cart_items.append({
                 'id': product_id,
                 'name': product_name,
@@ -1344,7 +1262,6 @@ class MainForm(QWidget):
             QMessageBox.critical(self, "Lỗi", f"Không thể thêm vào giỏ hàng: {str(e)}")
     
     def update_cart_display(self):
-        """Cập nhật hiển thị giỏ hàng"""
         self.cart_table.setRowCount(len(self.cart_items))
         total = 0
         
@@ -1364,6 +1281,9 @@ class MainForm(QWidget):
             quantity_spin.setMaximum(item['stock'])
             quantity_spin.setValue(item['quantity'])
             quantity_spin.setAlignment(Qt.AlignCenter)
+            
+            quantity_spin.setStyleSheet("color: black")
+            
             quantity_spin.valueChanged.connect(lambda val, r=row: self.update_cart_quantity(r, val))
             self.cart_table.setCellWidget(row, 2, quantity_spin)
             
@@ -1373,6 +1293,9 @@ class MainForm(QWidget):
             subtotal_item = QTableWidgetItem(f"{subtotal:,.0f} đ")
             subtotal_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
             subtotal_item.setFont(QFont("Segoe UI", 10, QFont.Bold))
+            
+            subtotal_item.setForeground(QColor("black"))
+            
             self.cart_table.setItem(row, 3, subtotal_item)
             
             # Remove button

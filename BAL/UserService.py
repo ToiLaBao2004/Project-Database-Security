@@ -82,11 +82,10 @@ class UserService:
                                                                     AND u.account_status = 'OPEN')"""
                 return self.oracleExec.fetch_all(query)
             else:
-                query=f"""SELECT * FROM APP_SERVICE.EMPLOYEES WHERE :keyword= {type_search} AND EXISTS 
-                                                                    (SELECT 1 FROM DBA_USERS u 
-                                                                    WHERE u.username = upper(username) 
-                                                                    AND u.account_status = 'OPEN')"""
-                return self.oracleExec.fetch_all(query, {"keyword": keyword})
+                query=f"""SELECT * FROM APP_SERVICE.EMPLOYEES e WHERE EXISTS (SELECT 1 FROM DBA_USERS u 
+                                                                    WHERE u.username = upper(e.username) 
+                                                                    AND u.account_status = 'OPEN') AND LOWER({type_search}) LIKE :keyword"""
+                return self.oracleExec.fetch_all(query, {"keyword": f"%{keyword.lower()}%"})
                 
         except DatabaseError as e:
             raise ValueError("Cannot get employee info", e)
