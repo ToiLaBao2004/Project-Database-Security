@@ -5,15 +5,15 @@ class CustomerService:
     def __init__(self, oracleExec: OracleExec):
         self.oracleExec=oracleExec
         
-    def get_all_customers(self, keyword=None, search_type=None) -> list:
+    def get_all_customers(self, keyword=None, type_search=None) -> list:
         try:
-            if search_type is None:
+            if type_search is None:
                 query="""SELECT id, name, phoneNumber FROM APP_SERVICE.CUSTOMERS ORDER BY id"""
                 
                 return self.oracleExec.fetch_all(query,{})
             else:
                 query=f"""SELECT id, name, phoneNumber FROM APP_SERVICE.CUSTOMERS
-                                                WHERE {search_type} LIKE :keyword
+                                                WHERE {type_search} LIKE :keyword
                                                 ORDER BY id"""
             
                 return self.oracleExec.fetch_all(query,{"keyword":f"%{keyword}%"})
@@ -43,12 +43,15 @@ class CustomerService:
         
     def set_context(self, phone_number: str):
         try:
-            query = """EXEC sec_mgr.fgac_ctx_pkg.set_phonenumber(:phone_number)"""
+            query = """
+            BEGIN
+                sec_mgr.fgac_ctx_pkg.set_phonenumber(:phone_number);
+            END;
+            """
             
-            self.oracleExec.execute(query,{"phone_number":phone_number})
+            self.oracleExec.execute(query, {"phone_number": phone_number})
             
-            query = """SELECT id, name, phoneNumber FROM APP_SERVICE.CUSTOMERS WHERE phonenumber = :phone_number"""
-            
-            self.oracleExec.fetch_one(query,{"phone_number":phone_number})
-        except DatabaseError as e:
-            raise ValueError(f"Can't set context for phone number: {phone_number} ", e)
+        except Exception as e:
+            raise ValueError(f"Can't set context for phone number: {phone_number}", e)
+        
+    

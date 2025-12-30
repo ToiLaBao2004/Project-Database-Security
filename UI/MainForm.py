@@ -622,7 +622,7 @@ class MainForm(QWidget):
         search_label.setStyleSheet("color: #2c3e50;")
         
         self.customer_search_combo = QComboBox()
-        self.customer_search_combo.addItems(["Tất cả", "Tên", "Email", "Số điện thoại"])
+        self.customer_search_combo.addItems(["Tất cả", "Tên", "Số điện thoại"])
         self.customer_search_combo.setFixedHeight(40)
         self.customer_search_combo.setFixedWidth(180)
         self.customer_search_combo.setStyleSheet("""
@@ -1170,25 +1170,7 @@ class MainForm(QWidget):
             self.customer_search_input.clear()
         
         try:
-            customers = self.customerService.get_all_customers()
-            
-            if keyword:
-                search_type = self.customer_search_combo.currentText()
-                filtered_customers = []
-                
-                for customer in customers:
-                    if search_type == "Tất cả":
-                        if (keyword.lower() in str(customer.get('name', '')).lower() or
-                            keyword in str(customer.get('phonenumber', ''))):
-                            filtered_customers.append(customer)
-                    elif search_type == "Tên":
-                        if keyword.lower() in str(customer.get('name', '')).lower():
-                            filtered_customers.append(customer)
-                    elif search_type == "Số điện thoại":
-                        if keyword in str(customer.get('phonenumber', '')):
-                            filtered_customers.append(customer)
-                
-                customers = filtered_customers
+            customers = self.customerService.get_all_customers(keyword=keyword,type_search=type_search)
             
             self.customer_table.setRowCount(0)
             
@@ -1219,34 +1201,21 @@ class MainForm(QWidget):
     
     def search_customers(self):
         """Tìm kiếm khách hàng"""
+        
         keyword = self.customer_search_input.text().strip()
         search_type = self.customer_search_combo.currentText()
         
-        if keyword:
-            self.load_customer_data(keyword=keyword, type_search=search_type)
-        elif self.customer_search_combo.currentText() == "Số điện thoại":
-            if  "emp" in self.username.lower():
-                customers = self.customerService.set_context(self.customer_search_input.text())
-                column_headers = ["id", "name", "phonenumber"]
-                self.customer_table.setColumnCount(len(column_headers))
-                self.customer_table.setHorizontalHeaderLabels(column_headers)
-            
-                self.customer_table.setRowCount(len(customers))
-                
-                for row, customer_dict in enumerate(customers):
-                    for col, key in enumerate(column_headers):
-                        data = customer_dict.get(key, "")
-                        
-                        if data is None:
-                            display_text = ""
-                        else:
-                            display_text = str(data)
-                        
-                        item = QTableWidgetItem(display_text)
-                        item.setTextAlignment(Qt.AlignCenter)
-                        self.customer_table.setItem(row, col, item)
-        else:
-            self.load_customer_data()
+        column_map = {
+            "Tên": "name",
+            "Số điện thoại": "phonenumber",
+        }
+        
+        type_search = column_map.get(search_type) if search_type != "Tất cả" else None
+        
+        if "emp" in self.username.lower() and type_search == "phonenumber" :
+            self.customerService.set_context(keyword)
+        
+        self.load_customer_data(keyword=keyword, type_search=type_search)
     
     def show_customer_detail(self, row, col):
         """Hiển thị chi tiết khách hàng"""
@@ -1290,18 +1259,6 @@ class MainForm(QWidget):
             <tr>
                 <td style='padding: 10px; font-weight: bold;'>📞 Số điện thoại:</td>
                 <td style='padding: 10px;'>{customer_data.get('phonenumber', 'N/A')}</td>
-            </tr>
-            <tr style='background-color: #f8f9fa;'>
-                <td style='padding: 10px; font-weight: bold;'>📧 Email:</td>
-                <td style='padding: 10px;'>{customer_data.get('email', 'N/A')}</td>
-            </tr>
-            <tr>
-                <td style='padding: 10px; font-weight: bold;'>🎂 Ngày sinh:</td>
-                <td style='padding: 10px;'>{customer_data.get('dateofbirth', 'N/A')}</td>
-            </tr>
-            <tr style='background-color: #f8f9fa;'>
-                <td style='padding: 10px; font-weight: bold;'>⚥ Giới tính:</td>
-                <td style='padding: 10px;'>{customer_data.get('gender', 'N/A')}</td>
             </tr>
         </table>
         """
