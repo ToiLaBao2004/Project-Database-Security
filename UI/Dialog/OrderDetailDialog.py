@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QTableWidget, 
     QTableWidgetItem, QPushButton, QFrame, QHeaderView, QDialogButtonBox,
-    QWidget, QMessageBox
+    QWidget, QMessageBox, QScrollArea
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
@@ -143,7 +143,45 @@ class OrderHistoryDialog(QDialog):
             detail_dialog.setMinimumSize(700, 500)
             detail_dialog.setStyleSheet("background-color: #ecf0f1;")
             
-            layout = QVBoxLayout(detail_dialog)
+            main_layout = QVBoxLayout(detail_dialog)
+            main_layout.setContentsMargins(0, 0, 0, 0)
+            main_layout.setSpacing(0)
+            
+            # Create scroll area
+            scroll_area = QScrollArea()
+            scroll_area.setWidgetResizable(True)
+            scroll_area.setFrameShape(QFrame.NoFrame)
+            scroll_area.setStyleSheet("""
+                QScrollArea {
+                    border: none;
+                    background-color: #ecf0f1;
+                }
+                QScrollBar:vertical {
+                    background-color: #ecf0f1;
+                    width: 12px;
+                    border-radius: 6px;
+                }
+                QScrollBar::handle:vertical {
+                    background-color: #95a5a6;
+                    border-radius: 6px;
+                    min-height: 20px;
+                }
+                QScrollBar::handle:vertical:hover {
+                    background-color: #7f8c8d;
+                }
+                QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                    height: 0px;
+                }
+                QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+                    background: none;
+                }
+            """)
+            
+            # Create content widget
+            content_widget = QWidget()
+            scroll_area.setWidget(content_widget)
+            
+            layout = QVBoxLayout(content_widget)
             layout.setContentsMargins(25, 25, 25, 25)
             layout.setSpacing(15)
             
@@ -186,6 +224,7 @@ class OrderHistoryDialog(QDialog):
             products_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
             products_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
             products_table.setAlternatingRowColors(True)
+            products_table.setMinimumHeight(400)
             products_table.setStyleSheet("""
                 QTableWidget {
                     background-color: white;
@@ -229,15 +268,17 @@ class OrderHistoryDialog(QDialog):
             layout.addWidget(products_table)
             
             total_frame = QFrame()
-            total_frame.setStyleSheet("background-color: #2ecc71; border-radius: 10px; padding: 15px;")
+            total_frame.setFixedHeight(30)
+            total_frame.setStyleSheet("background-color: #2ecc71; border-radius: 6px; padding: 5px;")
             total_layout = QHBoxLayout(total_frame)
+            total_layout.setContentsMargins(10, 0, 10, 0)
             
             total_label = QLabel("TỔNG CỘNG:")
-            total_label.setFont(QFont("Segoe UI", 14, QFont.Bold))
+            total_label.setFont(QFont("Segoe UI", 11, QFont.Bold))
             total_label.setStyleSheet("color: white; border: none; background: transparent;")
             
             total_value = QLabel(f"{order['total']:,.0f} đ")
-            total_value.setFont(QFont("Segoe UI", 18, QFont.Bold))
+            total_value.setFont(QFont("Segoe UI", 12, QFont.Bold))
             total_value.setStyleSheet("color: white; border: none; background: transparent;")
             total_value.setAlignment(Qt.AlignRight)
             
@@ -246,6 +287,9 @@ class OrderHistoryDialog(QDialog):
             total_layout.addWidget(total_value)
             
             layout.addWidget(total_frame)
+            
+            # Add scroll area to main layout
+            main_layout.addWidget(scroll_area)
             
             button_box = QDialogButtonBox(QDialogButtonBox.Close)
             button_box.rejected.connect(detail_dialog.reject)
@@ -262,6 +306,6 @@ class OrderHistoryDialog(QDialog):
                     background-color: #7f8c8d;
                 }
             """)
-            layout.addWidget(button_box)
+            main_layout.addWidget(button_box)
             
             detail_dialog.exec()
