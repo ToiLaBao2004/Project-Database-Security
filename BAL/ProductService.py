@@ -107,3 +107,6 @@ class ProductService:
                 return self.oracleExec.fetch_all(query,{})
         except DatabaseError as e:
             raise ValueError("Cannot get product info" ,e)
+        
+
+                            
