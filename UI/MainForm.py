@@ -622,7 +622,7 @@ class MainForm(QWidget):
         search_label.setStyleSheet("color: #2c3e50;")
         
         self.customer_search_combo = QComboBox()
-        self.customer_search_combo.addItems(["Tất cả", "Tên", "Email", "Số điện thoại"])
+        self.customer_search_combo.addItems(["Tất cả", "Tên", "Số điện thoại"])
         self.customer_search_combo.setFixedHeight(40)
         self.customer_search_combo.setFixedWidth(180)
         self.customer_search_combo.setStyleSheet("""
@@ -1170,25 +1170,7 @@ class MainForm(QWidget):
             self.customer_search_input.clear()
         
         try:
-            customers = self.customerService.get_all_customers()
-            
-            if keyword:
-                search_type = self.customer_search_combo.currentText()
-                filtered_customers = []
-                
-                for customer in customers:
-                    if search_type == "Tất cả":
-                        if (keyword.lower() in str(customer.get('name', '')).lower() or
-                            keyword in str(customer.get('phonenumber', ''))):
-                            filtered_customers.append(customer)
-                    elif search_type == "Tên":
-                        if keyword.lower() in str(customer.get('name', '')).lower():
-                            filtered_customers.append(customer)
-                    elif search_type == "Số điện thoại":
-                        if keyword in str(customer.get('phonenumber', '')):
-                            filtered_customers.append(customer)
-                
-                customers = filtered_customers
+            customers = self.customerService.get_all_customers(keyword=keyword,type_search=type_search)
             
             self.customer_table.setRowCount(0)
             
@@ -1219,13 +1201,21 @@ class MainForm(QWidget):
     
     def search_customers(self):
         """Tìm kiếm khách hàng"""
+        
         keyword = self.customer_search_input.text().strip()
         search_type = self.customer_search_combo.currentText()
         
-        if keyword:
-            self.load_customer_data(keyword=keyword, type_search=search_type)
-        else:
-            self.load_customer_data()
+        column_map = {
+            "Tên": "name",
+            "Số điện thoại": "phonenumber",
+        }
+        
+        type_search = column_map.get(search_type) if search_type != "Tất cả" else None
+        
+        if "emp" in self.username.lower() and type_search == "phonenumber" :
+            self.customerService.set_context(keyword)
+        
+        self.load_customer_data(keyword=keyword, type_search=type_search)
     
     def show_customer_detail(self, row, col):
         """Hiển thị chi tiết khách hàng"""
@@ -1270,18 +1260,6 @@ class MainForm(QWidget):
                 <td style='padding: 10px; font-weight: bold;'>📞 Số điện thoại:</td>
                 <td style='padding: 10px;'>{customer_data.get('phonenumber', 'N/A')}</td>
             </tr>
-            <tr style='background-color: #f8f9fa;'>
-                <td style='padding: 10px; font-weight: bold;'>📧 Email:</td>
-                <td style='padding: 10px;'>{customer_data.get('email', 'N/A')}</td>
-            </tr>
-            <tr>
-                <td style='padding: 10px; font-weight: bold;'>🎂 Ngày sinh:</td>
-                <td style='padding: 10px;'>{customer_data.get('dateofbirth', 'N/A')}</td>
-            </tr>
-            <tr style='background-color: #f8f9fa;'>
-                <td style='padding: 10px; font-weight: bold;'>⚥ Giới tính:</td>
-                <td style='padding: 10px;'>{customer_data.get('gender', 'N/A')}</td>
-            </tr>
         </table>
         """
         
@@ -1315,15 +1293,6 @@ class MainForm(QWidget):
         layout.addWidget(btn_close, alignment=Qt.AlignRight)
         
         detail_dialog.exec()
-    
-    def open_customer_dialog(self):
-        """Mở dialog quản lý khách hàng"""
-        try:
-            from UI.Dialog.CustomerDialog import CustomerDialog
-            dialog = CustomerDialog(self.oracleExec, self)
-            dialog.exec()
-        except Exception as e:
-            QMessageBox.critical(self, "Lỗi", f"Không thể mở quản lý khách hàng:\n{str(e)}")
                 
     def handle_logout(self):
         reply = QMessageBox.question(self, "Đăng Xuất", "Bạn có chắc chắn muốn đăng xuất?",
