@@ -1,30 +1,19 @@
 from PySide6.QtWidgets import (
     QWidget, QLabel, QPushButton, QHBoxLayout, QVBoxLayout, QFrame,
     QMessageBox, QTableWidget, QTableWidgetItem, QHeaderView, QStackedWidget,
-    QGridLayout, QScrollArea, QLineEdit, QComboBox, QSpinBox
+    QLineEdit, QComboBox, QSpinBox, 
 )
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QColor
 from datetime import date, datetime
 
-# Giả định các file import này vẫn giữ nguyên như code cũ của bạn
-# Nếu chạy test độc lập mà thiếu file thì bạn comment tạm các dòng import BAL/UI này lại
-try:
-    from BAL.UserService import UserService
-    from BAL.ProductService import ProductService
-    from BAL.OrderService import OrderService
-    from UI.Dialog.EmployeeDialog import EmployeeDetailDialog
-    from UI.Dialog.AddEmployeeDialog import AddEmployeeDialog
-    from UI.Dialog.AddProductDialog import AddProductDialog
-    from UI.Dialog.ProductDetailDialog import ProductDetailDialog
-except ImportError:
-    # Dummy classes để code không crash nếu thiếu file
-    UserService = None
-    ProductService = None
-    EmployeeDetailDialog = None
-    AddEmployeeDialog = None
-    AddProductDialog = None
-    ProductDetailDialog = None
+from BAL.UserService import UserService
+from BAL.ProductService import ProductService
+from BAL.OrderService import OrderService
+from UI.Dialog.EmployeeDialog import EmployeeDetailDialog
+from UI.Dialog.AddEmployeeDialog import AddEmployeeDialog
+from UI.Dialog.AddProductDialog import AddProductDialog
+from UI.Dialog.ProductDetailDialog import ProductDetailDialog
 
 class MainForm(QWidget):
     def __init__(self, oracleExec, username=None, parent=None):
@@ -351,6 +340,7 @@ class MainForm(QWidget):
                 border-radius: 8px;
                 padding: 8px 12px;
                 font-size: 11px;
+                color: black;
             }
             QLineEdit:focus {
                 border: 2px solid #3498db;
@@ -454,6 +444,7 @@ class MainForm(QWidget):
                 border-radius: 6px;
                 padding: 5px 10px;
                 font-size: 11px;
+                color: black;
             }
             QLineEdit:focus {
                 border: 2px solid #3498db;
@@ -482,6 +473,7 @@ class MainForm(QWidget):
                 border-radius: 6px;
                 padding: 5px 10px;
                 font-size: 11px;
+                color: black;
             }
             QLineEdit:focus {
                 border: 2px solid #3498db;
@@ -659,6 +651,10 @@ class MainForm(QWidget):
                 border-top: 5px solid #2c3e50;
                 margin-right: 10px;
             }
+            QComboBox QAbstractItemView {
+                color: black;
+                selection-background-color: #3498db;
+            }
         """)
         
         self.employee_search_input = QLineEdit()
@@ -688,6 +684,10 @@ class MainForm(QWidget):
         btn_add = QPushButton("➕ Thêm Nhân Viên")
         btn_delete = QPushButton("🗑️ Xóa Nhân Viên")
         btn_refresh = QPushButton("🔄 Làm Mới")
+        
+        btn_add.setStyleSheet("color: black; font-weight: bold;")
+        btn_delete.setStyleSheet("color: black; font-weight: bold;")
+        btn_refresh.setStyleSheet("color: black; font-weight: bold;")
         
         for btn in [btn_add, btn_delete, btn_refresh]:
             btn.setFixedHeight(40)
@@ -798,6 +798,10 @@ class MainForm(QWidget):
                 border-top: 5px solid #2c3e50;
                 margin-right: 10px;
             }
+            QComboBox QAbstractItemView {
+                color: black;
+                selection-background-color: #3498db;
+            }
         """)
         
         self.product_search_input = QLineEdit()
@@ -827,6 +831,10 @@ class MainForm(QWidget):
         btn_add = QPushButton("➕ Thêm Sản Phẩm")
         btn_delete = QPushButton("🗑️ Xóa Sản Phẩm")
         btn_refresh = QPushButton("🔄 Làm Mới")
+        
+        btn_add.setStyleSheet("color: black; font-weight: bold;")
+        btn_delete.setStyleSheet("color: black; font-weight: bold;")
+        btn_refresh.setStyleSheet("color: black; font-weight: bold;")
         
         for btn in [btn_add, btn_delete, btn_refresh]:
             btn.setFixedHeight(40)
@@ -1364,6 +1372,9 @@ class MainForm(QWidget):
             quantity_spin.setMaximum(item['stock'])
             quantity_spin.setValue(item['quantity'])
             quantity_spin.setAlignment(Qt.AlignCenter)
+            
+            quantity_spin.setStyleSheet("color: black")
+            
             quantity_spin.valueChanged.connect(lambda val, r=row: self.update_cart_quantity(r, val))
             self.cart_table.setCellWidget(row, 2, quantity_spin)
             
@@ -1373,6 +1384,9 @@ class MainForm(QWidget):
             subtotal_item = QTableWidgetItem(f"{subtotal:,.0f} đ")
             subtotal_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
             subtotal_item.setFont(QFont("Segoe UI", 10, QFont.Bold))
+            
+            subtotal_item.setForeground(QColor("black"))
+            
             self.cart_table.setItem(row, 3, subtotal_item)
             
             # Remove button
