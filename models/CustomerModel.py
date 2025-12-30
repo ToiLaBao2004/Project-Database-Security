@@ -1,10 +1,11 @@
 from pydantic import BaseModel
 from datetime import date
+from typing import Optional
 class CustomerModel(BaseModel):
-    id: int
+    id: Optional[int]=None
     name: str
-    phone_number: str
-    email: str
-    date_of_birth: date
-    gender: bool
+    phonenumber: str
+    email: Optional[str]=None
+    dateofbirth: Optional[date]=None
+    gender: Optional[bool]=None
     

@@ -45,7 +45,7 @@ class LoginForm(QWidget):
         title2.setFont(QFont("Segoe UI", 20, QFont.Bold))
         title2.setStyleSheet("color: white;")
 
-        title3 = QLabel("QUẢN LÝ ORACLE")
+        title3 = QLabel("QUẢN LÝ CỬA HÀNG THỂ THAO")
         title3.setAlignment(Qt.AlignCenter)
         title3.setFont(QFont("Segoe UI", 18, QFont.Bold))
         title3.setStyleSheet("color: #eaf6ff;")
