@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QTableWidget, 
     QTableWidgetItem, QPushButton, QFrame, QHeaderView, QDialogButtonBox,
-    QWidget, QMessageBox, QAbstractItemView
+    QWidget, QMessageBox, QAbstractItemView, QLineEdit
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
@@ -13,6 +13,7 @@ class OrderHistoryDialog(QDialog):
         self.order_service = order_service
         self.parent_widget = parent
         self.order_history = []
+        self.filtered_orders = []  # Danh sách đơn hàng sau khi lọc
         self.setWindowTitle("📋 Lịch Sử Đơn Hàng")
         self.setMinimumSize(1000, 600)
         self.setStyleSheet("background-color: #ecf0f1;")
@@ -33,6 +34,7 @@ class OrderHistoryDialog(QDialog):
                         "employee_username": order["employee_username"],
                         "total": order["total"]
                     })
+                self.filtered_orders = self.order_history.copy()  # Khởi tạo danh sách lọc
             else:
                 QMessageBox.warning(self, "Thông báo", "Không có dữ liệu đơn hàng")
         except Exception as e:
@@ -48,30 +50,57 @@ class OrderHistoryDialog(QDialog):
         header.setStyleSheet("color: #2c3e50; margin-bottom: 10px;")
         layout.addWidget(header)
         
-        orders_table = QTableWidget()
-        orders_table.setColumnCount(8)
-        orders_table.setHorizontalHeaderLabels(["Mã ĐH", "Khách Hàng", "SĐT", "Thời Gian", "Nhân Viên", "Username", "Tổng Tiền", "Chi Tiết"])
+        # Thêm thanh tìm kiếm
+        search_layout = QHBoxLayout()
+        search_label = QLabel("🔍 Tìm kiếm:")
+        search_label.setFont(QFont("Segoe UI", 11))
+        search_label.setStyleSheet("color: #2c3e50;")
         
-        orders_table.setColumnWidth(0, 70)
-        orders_table.setColumnWidth(1, 160)
-        orders_table.setColumnWidth(2, 100)
-        orders_table.setColumnWidth(3, 140)
-        orders_table.setColumnWidth(4, 140)
-        orders_table.setColumnWidth(5, 120)
-        orders_table.setColumnWidth(6, 100)
-        orders_table.setColumnWidth(7, 90)
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText("Nhập tên khách hàng, SĐT, nhân viên hoặc mã đơn hàng...")
+        self.search_input.setFont(QFont("Segoe UI", 10))
+        self.search_input.setStyleSheet("""
+            QLineEdit {
+                padding: 10px;
+                border: 2px solid #bdc3c7;
+                border-radius: 8px;
+                background-color: white;
+            }
+            QLineEdit:focus {
+                border: 2px solid #3498db;
+            }
+        """)
+        self.search_input.textChanged.connect(self.filter_orders)
+        
+        search_layout.addWidget(search_label)
+        search_layout.addWidget(self.search_input)
+        layout.addLayout(search_layout)
+        
+        # Bảng đơn hàng
+        self.orders_table = QTableWidget()
+        self.orders_table.setColumnCount(8)
+        self.orders_table.setHorizontalHeaderLabels(["Mã ĐH", "Khách Hàng", "SĐT", "Thời Gian", "Nhân Viên", "Username", "Tổng Tiền", "Chi Tiết"])
+        
+        self.orders_table.setColumnWidth(0, 70)
+        self.orders_table.setColumnWidth(1, 160)
+        self.orders_table.setColumnWidth(2, 100)
+        self.orders_table.setColumnWidth(3, 140)
+        self.orders_table.setColumnWidth(4, 140)
+        self.orders_table.setColumnWidth(5, 120)
+        self.orders_table.setColumnWidth(6, 100)
+        self.orders_table.setColumnWidth(7, 90)
         
         # --- SỬA ĐỔI QUAN TRỌNG: Khóa chiều cao hàng ---
         # Chuyển sang chế độ Fixed để tránh bị tự động co lại
-        orders_table.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
+        self.orders_table.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
         # Set chiều cao mặc định (dự phòng)
-        orders_table.verticalHeader().setDefaultSectionSize(60)
+        self.orders_table.verticalHeader().setDefaultSectionSize(60)
         
-        orders_table.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        orders_table.setAlternatingRowColors(True)
-        orders_table.setSelectionMode(QAbstractItemView.NoSelection) # Tắt chọn ô để tránh rối mắt khi click nút
+        self.orders_table.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.orders_table.setAlternatingRowColors(True)
+        self.orders_table.setSelectionMode(QAbstractItemView.NoSelection) # Tắt chọn ô để tránh rối mắt khi click nút
         
-        orders_table.setStyleSheet("""
+        self.orders_table.setStyleSheet("""
             QTableWidget {
                 background-color: white;
                 border: 1px solid #bdc3c7;
@@ -92,45 +121,68 @@ class OrderHistoryDialog(QDialog):
             }
         """)
         
-        orders_table.setRowCount(len(self.order_history))
+        self.populate_table()  # Gọi hàm populate table
         
-        for row, order in enumerate(self.order_history):
-            orders_table.setRowHeight(row, 60) 
+        layout.addWidget(self.orders_table)
+        
+        button_box = QDialogButtonBox(QDialogButtonBox.Close)
+        button_box.rejected.connect(self.reject)
+        button_box.setStyleSheet("""
+            QPushButton {
+                background-color: #95a5a6;
+                color: white;
+                border-radius: 5px;
+                padding: 8px 20px;
+                font-weight: bold;
+                min-width: 80px;
+            }
+            QPushButton:hover {
+                background-color: #7f8c8d;
+            }
+        """)
+        layout.addWidget(button_box)
+    
+    def populate_table(self):
+        """Điền dữ liệu vào bảng từ filtered_orders"""
+        self.orders_table.setRowCount(len(self.filtered_orders))
+        
+        for row, order in enumerate(self.filtered_orders):
+            self.orders_table.setRowHeight(row, 60) 
             
             id_val = order["order_id"]
             id_item = QTableWidgetItem(f"#{id_val}")
             id_item.setTextAlignment(Qt.AlignCenter)
             id_item.setFont(QFont("Segoe UI", 10, QFont.Bold))
-            orders_table.setItem(row, 0, id_item)
+            self.orders_table.setItem(row, 0, id_item)
 
             name_item = QTableWidgetItem(order["customer_name"])
             name_item.setTextAlignment(Qt.AlignVCenter | Qt.AlignLeft)
-            orders_table.setItem(row, 1, name_item)
+            self.orders_table.setItem(row, 1, name_item)
             
             phone_item = QTableWidgetItem(order["customer_phone"])
             phone_item.setTextAlignment(Qt.AlignCenter)
-            orders_table.setItem(row, 2, phone_item)
+            self.orders_table.setItem(row, 2, phone_item)
             
             raw_date = order["order_date"]
             date_str = raw_date.strftime("%d/%m/%Y %H:%M:%S")
             date_item = QTableWidgetItem(date_str)
             date_item.setTextAlignment(Qt.AlignCenter)
-            orders_table.setItem(row, 3, date_item)
+            self.orders_table.setItem(row, 3, date_item)
             
             employee_item = QTableWidgetItem(order["employee_name"])
             employee_item.setTextAlignment(Qt.AlignVCenter | Qt.AlignLeft)
-            orders_table.setItem(row, 4, employee_item)
+            self.orders_table.setItem(row, 4, employee_item)
             
             username_item = QTableWidgetItem(order["employee_username"])
             username_item.setTextAlignment(Qt.AlignCenter)
-            orders_table.setItem(row, 5, username_item)
+            self.orders_table.setItem(row, 5, username_item)
 
             total_val = order.get('total') or 0
             total_item = QTableWidgetItem(f"{float(total_val):,.0f} đ")
             total_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
             total_item.setFont(QFont("Segoe UI", 10, QFont.Bold))
             total_item.setForeground(Qt.darkGreen)
-            orders_table.setItem(row, 6, total_item)
+            self.orders_table.setItem(row, 6, total_item)
             
             # --- Container cho nút ---
             container_widget = QWidget()
@@ -159,26 +211,29 @@ class OrderHistoryDialog(QDialog):
             btn_detail.clicked.connect(lambda checked, o=order: self.view_order_detail(o['order_id']))
             
             layout_btn.addWidget(btn_detail)
-            orders_table.setCellWidget(row, 7, container_widget)
+            self.orders_table.setCellWidget(row, 7, container_widget)
+    
+    def filter_orders(self):
+        """Lọc đơn hàng dựa trên từ khóa tìm kiếm"""
+        search_text = self.search_input.text().lower().strip()
         
-        layout.addWidget(orders_table)
+        if not search_text:
+            # Nếu không có từ khóa, hiển thị tất cả
+            self.filtered_orders = self.order_history.copy()
+        else:
+            # Lọc đơn hàng theo từ khóa
+            self.filtered_orders = []
+            for order in self.order_history:
+                # Tìm kiếm trong tên khách hàng, SĐT, nhân viên, username, mã đơn hàng
+                if (search_text in order["customer_name"].lower() or
+                    search_text in order["customer_phone"].lower() or
+                    search_text in order["employee_name"].lower() or
+                    search_text in order["employee_username"].lower() or
+                    search_text in str(order["order_id"]).lower()):
+                    self.filtered_orders.append(order)
         
-        button_box = QDialogButtonBox(QDialogButtonBox.Close)
-        button_box.rejected.connect(self.reject)
-        button_box.setStyleSheet("""
-            QPushButton {
-                background-color: #95a5a6;
-                color: white;
-                border-radius: 5px;
-                padding: 8px 20px;
-                font-weight: bold;
-                min-width: 80px;
-            }
-            QPushButton:hover {
-                background-color: #7f8c8d;
-            }
-        """)
-        layout.addWidget(button_box)
+        # Cập nhật lại bảng
+        self.populate_table()
     
     def view_order_detail(self, order_id):
         """View details of a specific order"""
