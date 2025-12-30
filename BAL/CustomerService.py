@@ -5,6 +5,14 @@ class CustomerService:
     def __init__(self, oracleExec: OracleExec):
         self.oracleExec=oracleExec
         
+    def get_all_customers(self) -> list:
+        try:
+            query="""SELECT * FROM APP_SERVICE.CUSTOMERS ORDER BY id"""
+            
+            return self.oracleExec.fetch_all(query)
+        except DatabaseError as e:
+            raise ValueError("Can not get customers info ",e)
+        
     def get_customer_by_phone(self,phonenumber: str) -> dict|None:
         try:
             query="""SELECT * FROM APP_SERVICE.CUSTOMERS WHERE phoneNumber = :phonenumber"""

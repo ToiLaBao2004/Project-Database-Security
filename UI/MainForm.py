@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import (
     QWidget, QLabel, QPushButton, QHBoxLayout, QVBoxLayout, QFrame,
     QMessageBox, QTableWidget, QTableWidgetItem, QHeaderView, QStackedWidget,
-    QLineEdit, QComboBox, QSpinBox, 
+    QLineEdit, QComboBox, QSpinBox, QDialog
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QColor
@@ -691,7 +691,7 @@ class MainForm(QWidget):
 
         self.customer_table = QTableWidget()
         self.customer_table.setColumnCount(6)
-        self.customer_table.setHorizontalHeaderLabels(["id", "name", "dateofbirth", "gender", "phonenumber", "email"])
+        self.customer_table.setHorizontalHeaderLabels(["id", "name", "phonenumber", "email", "dateofbirth", "gender"])
         self.customer_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.customer_table.setAlternatingRowColors(True)
         self.customer_table.setStyleSheet("""
@@ -1181,7 +1181,7 @@ class MainForm(QWidget):
                     if search_type == "Tất cả":
                         if (keyword.lower() in str(customer.get('name', '')).lower() or
                             keyword.lower() in str(customer.get('email', '')).lower() or
-                            keyword in str(customer.get('phone_number', ''))):
+                            keyword in str(customer.get('phonenumber', ''))):
                             filtered_customers.append(customer)
                     elif search_type == "Tên":
                         if keyword.lower() in str(customer.get('name', '')).lower():
@@ -1190,7 +1190,7 @@ class MainForm(QWidget):
                         if keyword.lower() in str(customer.get('email', '')).lower():
                             filtered_customers.append(customer)
                     elif search_type == "Số điện thoại":
-                        if keyword in str(customer.get('phone_number', '')):
+                        if keyword in str(customer.get('phonenumber', '')):
                             filtered_customers.append(customer)
                 
                 customers = filtered_customers
@@ -1201,7 +1201,7 @@ class MainForm(QWidget):
                 return
             
             # Tạo column headers theo thứ tự mong muốn
-            column_headers = ['id', 'name', 'date_of_birth', 'gender', 'phone_number', 'email']
+            column_headers = ["id", "name", "phonenumber", "email", "dateofbirth", "gender"]
             
             self.customer_table.setColumnCount(len(column_headers))
             self.customer_table.setHorizontalHeaderLabels(column_headers)
@@ -1278,7 +1278,7 @@ class MainForm(QWidget):
             </tr>
             <tr>
                 <td style='padding: 10px; font-weight: bold;'>📞 Số điện thoại:</td>
-                <td style='padding: 10px;'>{customer_data.get('phone_number', 'N/A')}</td>
+                <td style='padding: 10px;'>{customer_data.get('phonenumber', 'N/A')}</td>
             </tr>
             <tr style='background-color: #f8f9fa;'>
                 <td style='padding: 10px; font-weight: bold;'>📧 Email:</td>
@@ -1286,7 +1286,7 @@ class MainForm(QWidget):
             </tr>
             <tr>
                 <td style='padding: 10px; font-weight: bold;'>🎂 Ngày sinh:</td>
-                <td style='padding: 10px;'>{customer_data.get('date_of_birth', 'N/A')}</td>
+                <td style='padding: 10px;'>{customer_data.get('dateofbirth', 'N/A')}</td>
             </tr>
             <tr style='background-color: #f8f9fa;'>
                 <td style='padding: 10px; font-weight: bold;'>⚥ Giới tính:</td>
