@@ -215,9 +215,6 @@ class AddEmployeeDialog(QDialog):
             
             self.userService.create_employee(employee)
             
-            QMessageBox.information(self, "Thành Công", f"Đã thêm nhân viên {data['name']} với ID {employee.id}")
-            return employee  # Trả về model để parent sử dụng nếu cần
-            
         except Exception as e:
             QMessageBox.critical(self, "Lỗi", f"Lỗi khi thêm nhân viên: {str(e)}")
             return None
