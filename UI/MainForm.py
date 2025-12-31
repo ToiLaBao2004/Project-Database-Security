@@ -1661,7 +1661,7 @@ class MainForm(QWidget):
             
                 employee=self.userService.get_user()
                 
-                order=OrderModel(cus_id=cus_id[0],
+                order=OrderModel(cus_id=cus_id,
                                  emp_id=employee["id"],
                                  order_date_time=datetime.now())
                 
