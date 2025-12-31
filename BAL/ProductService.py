@@ -10,10 +10,12 @@ class ProductService:
         
         try:
             if type_search is None:
-                query="""SELECT * FROM APP_SERVICE.PRODUCTS WHERE ACTIVE=true order BY id"""
+                query="""SELECT * FROM APP_SERVICE.PRODUCTS WHERE ACTIVE=true ORDER BY id"""
                 return self.oracleExec.fetch_all(query)
             else:
-                query=f"""SELECT * FROM APP_SERVICE.PRODUCTS WHERE LOWER({type_search}) LIKE :keyword"""
+                query=f"""SELECT * FROM APP_SERVICE.PRODUCTS WHERE ACTIVE=TRUE 
+                                                            AND LOWER({type_search}) LIKE :keyword"""
+                                                            
                 return self.oracleExec.fetch_all(query,{"keyword":f"%{keyword.lower()}%"})
         except DatabaseError as e:
             raise ValueError("Cannot get product info" ,e)
@@ -94,7 +96,7 @@ class ProductService:
                                 name,
                                 unitPrice,
                                 stockQuantity
-                                FROM APP_SERVICE.PRODUCTS WHERE LOWER(name) LIKE :keyword order BY id"""
+                                FROM APP_SERVICE.PRODUCTS WHERE LOWER(name) LIKE :keyword WHERE active=1 ORDER BY id"""
                 return self.oracleExec.fetch_all(query,{"keyword":f"%{keyword.lower()}%"})
             
             else:
@@ -102,7 +104,7 @@ class ProductService:
                                 name,
                                 unitPrice,
                                 stockQuantity
-                                FROM APP_SERVICE.PRODUCTS order BY id"""
+                                FROM APP_SERVICE.PRODUCTS WHERE active=1 ORDER BY id"""
                 
                 return self.oracleExec.fetch_all(query,{})
         except DatabaseError as e:
